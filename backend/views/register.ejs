@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/variables.css">
+  
+  <!-- 2. Global CSS (resets, base, utilities) -->
+  <link rel="stylesheet" href="/assets/css/global.css">
+  
+  <!-- 3. Komponente (form groups, buttons, itd.) -->
+  <link rel="stylesheet" href="/assets/css/components.css">
+  
+  <!-- 4. Route-specific CSS (samo za ovu stranicu) -->
+  <link rel="stylesheet" href="/assets/css/pages/register.css">
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="toastContainer"></div>
+    
+    <form class="register-form" id="registerForm">
+      <div class="form-group">
+        <label>Ime</label>
+        <input type="text" name="first_name" required />
+        <span class="error-message hidden" ></span>
+      </div>
+      <div class="form-group">
+        <label>Prezime</label>
+        <input type="text" name="last_name" required />
+        <span class="error-message" ></span>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" pattern="^([a-zA-Z0-9_\-\.\+]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$" required />
+        <span class="error-message hidden" ></span>
+      </div>
+
+      <div class="form-group">
+        <label>Lozinka</label>
+        <input
+          type="password"
+          name="password"
+          required
+        />
+        <span class="error-message hidden" ></span>
+      </div>
+
+      <div class="form-group">
+        <label>Broj mobitela</label>
+        <input
+          type="tel"
+          name="phone_number"
+          placeholder="+385912345678"
+          required
+        />
+        <span class="error-message hidden" ></span>
+      </div>
+
+      <div class="form-group">
+        <label>Naziv firme</label>
+        <input
+          type="text"
+          name="business_name"
+          placeholder="npr. Salon Lucija"
+          required
+        />
+        <span class="error-message hidden" ></span>
+      </div>
+
+      <div class="form-group">
+        <label>Tip djelatnosti</label>
+        <select name="job_id"  required>
+          <option value="">Odaberi...</option>
+          <option value="1">Frizerski salon</option>
+          <option value="2">Kozmeticarski salon</option>
+          <option value="3">Automehaničar</option>
+          <option value="4">Doktor</option>
+          <option value="5">Dentist</option>
+          <option value="6">Masaža</option>
+          <option value="7">Estetika</option>
+          <option value="8">Frisor za bradu</option>
+          <option value="9">Medicinska sestra</option>
+          <option value="10">Ostalo</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tip djelatnosti</label>
+        <select name="country_code" required>
+          <option value="">Odaberite zemlju</option>
+          
+        </select>
+      </div>
+      
+      <button type="submit" class="btn btn-primary" id="btnRegister">Registriraj se</button>
+      <p>Već ste prijavljeni? <a href="/login">Login</a></p>
+    </form>
+
+    <script src="/main.js"></script>
+    <script src="/register.js"></script>
+  </body>
+</html> 

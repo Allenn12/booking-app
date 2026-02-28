@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificiraj Email</title>
+  <style>
+    /* ... tvoj postojeći CSS ... */
+    
+    .resend-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    
+    .resend-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .resend-btn:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    
+    .resend-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .resend-btn.disabled {
+      opacity: 0.6;
+    }
+    
+    #countdown {
+      font-weight: bold;
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📧</div>
+    <h1>Verificiraj svoj email</h1>
+    <p>Poslali smo verification link na <strong><%= userEmail %></strong></p>
+    <p>Klikni na link u emailu da verificiraš svoj account.</p>
+    
+    <div id="status" class="status">
+      ⏳ Čekamo potvrdu...
+    </div>
+    
+    <!-- ⭐ Resend section -->
+    <div class="resend-section">
+      <p>Nisi primio email?</p>
+      <button id="resend-btn" class="resend-btn disabled" disabled>
+        Pošalji ponovno za <span id="countdown">30</span>s
+      </button>
+    </div>
+  </div>
+  
+  <script src="/verify-email.js"></script>
+</body>
+</html>
