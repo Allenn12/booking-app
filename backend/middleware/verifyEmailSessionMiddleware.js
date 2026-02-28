@@ -26,7 +26,8 @@ export async function verifyEmailMiddleware(req, res, next) {
     
     // Ako je već verificiran → redirect /dashboard
     if (user.verification_level === 'active') {
-      return res.redirect('/dashboard');
+      console.log('User je verificiran');
+      //return res.redirect('/dashboard');
     }
     
     // Ako NIJE u 'pending' → greška

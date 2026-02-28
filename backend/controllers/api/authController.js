@@ -243,6 +243,10 @@ export async function login(req, res, next) {
 
             return res.status(203).json({
                 success: false,
+                user: {
+                    id: user.id,
+                    email: user.email
+                },
                 code: "EMAIL_NOT_VERIFIED",
                 message: "Email nije verificiran. Poslali smo ti verifikacijski link.",
                 redirectTo: '/verify-email'
@@ -253,7 +257,7 @@ export async function login(req, res, next) {
         req.session.userEmail = user.email;
         req.session.authenticated = true;
 
-        console.log("🟢 SESSION NAKON LOGIN/REGISTER:", {
+        console.log("🟢 SESSION NAKON LOGIN:", {
             id: req.sessionID,
             data: req.session,
         });
@@ -276,6 +280,11 @@ export async function login(req, res, next) {
         return res.status(200).json({
             success: true,
             message: "Uspješno ste se prijavili",
+            user: {
+                id: user.id,
+                email: user.email,
+                verificationLevel: user.verification_level,
+            },
             redirectTo: "/dashboard",
         });
     } catch (error) {
@@ -310,7 +319,6 @@ export async function logout(req, res, next) {
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
             });
-            res.redirect("/login");
         });
     } catch (error) {
         next(error);

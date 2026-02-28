@@ -41,11 +41,11 @@ export function AuthProvider({ children }) {
   async function login(credentials) {
     const response = await api.login(credentials);
     if (response.success) {
-      setUser({ authenticated: true });
+      setUser({...response.user, authenticated: true });
       return response;
     }
     else if(!response.success && response.code === 'EMAIL_NOT_VERIFIED'){
-      setUser({authenticated: false})
+      setUser({...response.user, authenticated: false})
       return response;
     }
     throw new Error(response.error);

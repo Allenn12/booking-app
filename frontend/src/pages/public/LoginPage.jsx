@@ -19,10 +19,12 @@ function LoginPage() {
 
     try {
       await login({ email, password });
+      console.log('USPJEŠNO SAM SE LOGIRAO');
       navigate('/dashboard');
     } catch (err) {
       console.log('ERROR', err.code);
       if(err.code === 'EMAIL_NOT_VERIFIED'){
+        console.log('Email nije verificiran!')
         navigate('/verify-email');
         return;
       }

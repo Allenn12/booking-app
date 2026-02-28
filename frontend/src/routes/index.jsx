@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import PublicRoute from '../components/guards/PublicRoute';
 import ProtectedRoute from '../components/guards/ProtectedRoute';
+import NeutralRoute from '../components/guards/NeutralRoute';
 
 // ============================================
 // IMPORT ALL PAGES
@@ -42,7 +43,6 @@ export const routeConfig = {
     { path: '/', component: HomePage },
     { path: '/login', component: LoginPage },
     { path: '/register',  component: RegisterPage },
-    { path: '/email-verified', component: EmailVerifiedPage}
   ],
 
   neutral: [
@@ -98,15 +98,6 @@ export function AppRoutes() {
         />
       ))}
       
-      {/* ================== NEUTRAL ROUTES ================== */}
-      {routeConfig.neutral.map(({ path, component: Component }) => (
-        <Route
-          key={path}
-          path={path}
-          element={<Component />}   
-        />
-      ))}
-
       {/* ================== PROTECTED ROUTES ================== */}
       {routeConfig.protected.map(({ path, component: Component }) => (
         <Route 
@@ -119,6 +110,19 @@ export function AppRoutes() {
           }
         />
       ))}
+
+      {/* ================== NEUTRAL ROUTES ================== */}
+      {routeConfig.neutral.map(({ path, component: Component }) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+          <NeutralRoute>
+            <Component />
+          </NeutralRoute>}   
+        />
+      ))}
+
     </Routes>
   );
 }
