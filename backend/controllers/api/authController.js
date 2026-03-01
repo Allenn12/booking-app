@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import Country from "../../models/Country.js";
+import UserBusiness from "../../models/UserBusiness.js";
+import Invitation from "../../models/Invitation.js";
 import { hashPassword } from "../../script/hashPassword.js";
 import { ERRORS } from "../../utils/errors.js";
 import { sendVerificationEmail } from "../../utils/emailService.js";
@@ -113,6 +115,21 @@ export async function verifyEmailToken(req, res, next) {
             id: req.sessionID,
             data: req.session,
         });
+
+        // ⭐ Handle pending invite
+        if (req.session.pendingInviteToken) {
+            const token = req.session.pendingInviteToken;
+            const invite = await Invitation.findByToken(token);
+            if (invite) {
+                // Check if already a member (safety)
+                const alreadyMember = await UserBusiness.findByUserAndBusiness(user.id, invite.business_id);
+                if (!alreadyMember) {
+                    await UserBusiness.create(user.id, invite.business_id, invite.role);
+                    await Invitation.incrementUsedCount(invite.id);
+                }
+            }
+            delete req.session.pendingInviteToken;
+        }
 
         return res.redirect("http://localhost:5173/verify-email?verified=true");
     } catch (error) {
@@ -296,6 +313,7 @@ export async function checkSession(req, res, next){
     try {
     // authMiddleware već provjerio session i postavio req.user
     const user = await User.getByUserId(req.user.id);
+    const businesses = await UserBusiness.getUserBusinesses(user.id);
 
     return res.status(200).json({
       authenticated: true,
@@ -303,6 +321,7 @@ export async function checkSession(req, res, next){
         id: user.id,
         email: user.email,
         verificationLevel: user.verification_level,
+        hasBusinesses: businesses.length > 0
       }
     });
   } catch (error) {

@@ -1,5 +1,6 @@
 import Business  from '../../models/Business.js';
 import UserBusiness from '../../models/UserBusiness.js';
+import Invitation from '../../models/Invitation.js';
 import { ERRORS } from '../../utils/errors.js';
 
 export const BusinessController = {
@@ -36,13 +37,24 @@ export const BusinessController = {
       // 4. Add owner to user_business table (relationship)
       await UserBusiness.create(userId, business, 'owner');
       
-      // 5. Response
+      // 5. Auto-generate permanent invitation
+      const invite = await Invitation.createPermanent({ 
+        businessId: business, 
+        createdBy: userId, 
+        role: 'employee' 
+      });
+
+      // 6. Response
       res.status(201).json({
         success: true,
         message: 'Business created successfully',
         data: {
           businessId: business,
-          name: name
+          name: name,
+          invite: {
+            code: invite.code,
+            token: invite.token
+          }
         }
       });
       

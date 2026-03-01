@@ -46,3 +46,32 @@ export async function sendVerificationEmail(email, verificationLink) {
         throw error;
     }
 }
+
+export async function sendEmail({ to, subject, text, html }) {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: 'sandbox.smtp.mailtrap.io',
+            port: process.env.MAILTRAP_PORT || 2525,
+            secure: false,
+            auth: {
+                user: "15283a995f2545",
+                pass: "7e048a9b500a13"
+            }
+        });
+
+        const mailOptions = {
+            from: 'noreply@app.com',
+            to,
+            subject,
+            text,
+            html: html || text
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Generic Email sent: ${info.messageId}`);
+        return true;
+    } catch (error) {
+        console.error('❌ Error sending generic email:', error);
+        throw error;
+    }
+}

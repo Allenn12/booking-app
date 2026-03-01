@@ -24,11 +24,11 @@ export function AuthProvider({ children }) {
   async function checkSession() {
     try {
       console.log('🔍 Checking session...');
-      
+
       // Try to get user businesses (ako ima session, uspjet će)
       const response = await api.checkSession();
-      setUser(response.user);
-      console.log('✅ Session valid', response.user.email);
+      setUser(response.user); // user object now contains hasBusinesses
+      console.log('✅ Session valid', response.user.email, '| Has Business:', response.user.hasBusinesses);
     } catch (error) {
       // Nema sessiona
       console.log('❌ No session:', error.message);
@@ -41,11 +41,14 @@ export function AuthProvider({ children }) {
   async function login(credentials) {
     const response = await api.login(credentials);
     if (response.success) {
-      setUser({...response.user, authenticated: true });
+      // response.user during login might not have hasBusinesses yet if it's from authController.login
+      // but if we updated authController.js to include it, it's fine.
+      // Let's call checkSession to be sure we have the latest state including businesses
+      await checkSession();
       return response;
     }
-    else if(!response.success && response.code === 'EMAIL_NOT_VERIFIED'){
-      setUser({...response.user, authenticated: false})
+    else if (!response.success && response.code === 'EMAIL_NOT_VERIFIED') {
+      setUser({ ...response.user, authenticated: false })
       return response;
     }
     throw new Error(response.error);
@@ -66,11 +69,11 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      register, 
-      logout, 
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
       loading,
       checkSession // ⭐ Expose checkSession method!
     }}>

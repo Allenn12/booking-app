@@ -18,15 +18,15 @@ import { useAuth } from '../../hooks/useAuth';
 function ProtectedRoute({ children }) {
   // 1. Get user authentication state
   const { user, loading } = useAuth();
-  
+
   // 2. LOADING STATE
   // Same reason as PublicRoute - avoid flash of wrong page
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
         fontSize: '18px',
         color: '#666'
@@ -35,21 +35,27 @@ function ProtectedRoute({ children }) {
       </div>
     );
   }
-  
+
   // 3. USER NOT AUTHENTICATED → Redirect to login
   // WHY: User needs to login before accessing protected pages
   if (!user) {
     console.log('❌ ProtectedRoute: User not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
-  
+
   if (user.verificationLevel !== 'active') {
     return <Navigate to="/verify-email" replace />;
   }
 
+  // ⭐ REDIRECT TO ONBOARDING IF NO BUSINESSES
+  if (!user.hasBusinesses) {
+    console.log('⚠️ ProtectedRoute: User has no business, redirecting to /onboarding');
+    return <Navigate to="/onboarding" replace />;
+  }
+
   // 4. USER AUTHENTICATED → Show protected page
   // WHY: User has valid session, allow access
-  console.log('✅ ProtectedRoute: User authenticated, showing protected page');
+  console.log('✅ ProtectedRoute: User authenticated and has business, showing protected page');
   return children;
 }
 

@@ -17,6 +17,7 @@ import EmailVerifiedPage from '../pages/public/EmailVerifiedPage';
 // Authenticated pages
 import Dashboard from '../pages/app/Dashboard';
 import Calendar from '../pages/app/Calendar';
+import OnboardingPage from '../pages/app/OnboardingPage';
 
 // ============================================
 // ROUTE CONFIGURATION
@@ -42,22 +43,23 @@ export const routeConfig = {
   public: [
     { path: '/', component: HomePage },
     { path: '/login', component: LoginPage },
-    { path: '/register',  component: RegisterPage },
+    { path: '/register', component: RegisterPage },
   ],
 
   neutral: [
     { path: '/verify-email', component: VerifyEmailPage },
+    { path: '/onboarding', component: OnboardingPage },
   ],
 
   // Protected routes (require authentication)
   protected: [
-    { 
-      path: '/dashboard', 
-      component: Dashboard 
+    {
+      path: '/dashboard',
+      component: Dashboard
     },
-    { 
-      path: '/calendar', 
-      component: Calendar 
+    {
+      path: '/calendar',
+      component: Calendar
     }
   ]
 };
@@ -87,7 +89,7 @@ export function AppRoutes() {
     <Routes>
       {/* ================== PUBLIC ROUTES ================== */}
       {routeConfig.public.map(({ path, component: Component }) => (
-        <Route 
+        <Route
           key={path}                    // ← Unique key za React list rendering
           path={path}                   // ← URL path (/, /login, /register)
           element={                     // ← What to render
@@ -97,10 +99,10 @@ export function AppRoutes() {
           }
         />
       ))}
-      
+
       {/* ================== PROTECTED ROUTES ================== */}
       {routeConfig.protected.map(({ path, component: Component }) => (
-        <Route 
+        <Route
           key={path}
           path={path}
           element={
@@ -117,9 +119,9 @@ export function AppRoutes() {
           key={path}
           path={path}
           element={
-          <NeutralRoute>
-            <Component />
-          </NeutralRoute>}   
+            <NeutralRoute>
+              <Component />
+            </NeutralRoute>}
         />
       ))}
 

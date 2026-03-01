@@ -140,10 +140,14 @@ const UserBusiness = {
                     b.name AS business_name,
                     b.sms_credits AS business_sms_credits,
                     b.subscription_status AS business_subscription_status,
-                    b.trial_ends_at AS business_trial_ends_at
+                    b.trial_ends_at AS business_trial_ends_at,
+                    
+                    i.code AS invite_code,
+                    i.token AS invite_token
                     
                 FROM user_business ub
                 INNER JOIN business b ON ub.business_id = b.id
+                LEFT JOIN invitations i ON b.id = i.business_id AND i.is_active = 1
                 WHERE ub.user_id = ?
                     AND b.is_active = 1
                 ORDER BY 
@@ -229,6 +233,40 @@ const UserBusiness = {
             throw ERRORS.DATABASE(`Failed to get business users: ${error.message}`);
         }
     },
-}
+    findByUserAndBusiness: async (userId, businessId) => {
+        try {
+            if (!userId || !businessId) {
+                throw ERRORS.VALIDATION('User ID and Business ID are required');
+            }
+            const sql = 'SELECT * FROM user_business WHERE user_id = ? AND business_id = ? LIMIT 1';
+            const [rows] = await pool.query(sql, [userId, businessId]);
+            return rows[0];
+        } catch (error) {
+            console.error('❌ UserBusiness.findByUserAndBusiness error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to find user-business association: ${error.message}`);
+        }
+    },
+    findOwner: async (businessId) => {
+        try {
+            if (!businessId) {
+                throw ERRORS.VALIDATION('Business ID is required');
+            }
+            const sql = `
+                SELECT u.* 
+                FROM user u
+                JOIN user_business ub ON u.id = ub.user_id
+                WHERE ub.business_id = ? AND ub.role = 'owner'
+                LIMIT 1
+            `;
+            const [rows] = await pool.query(sql, [businessId]);
+            return rows[0];
+        } catch (error) {
+            console.error('❌ UserBusiness.findOwner error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to find business owner: ${error.message}`);
+        }
+    },
+};
 
 export default UserBusiness;

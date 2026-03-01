@@ -276,6 +276,39 @@ const Business = {
             throw ERRORS.DATABASE(`Failed to update business info: ${error.message}`);
         }
     },
+    findByUserId: async (userId) => {
+        try {
+            if (!userId || isNaN(Number(userId))) {
+                throw ERRORS.VALIDATION('User ID is required');
+            }
+            const sql = `
+                SELECT b.* 
+                FROM business b
+                JOIN user_business ub ON b.id = ub.business_id
+                WHERE ub.user_id = ? AND b.is_active = 1
+            `;
+            const [result] = await pool.query(sql, [userId]);
+            return result;
+        } catch (error) {
+            console.error('❌ Business.findByUserId error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to get businesses for user: ${error.message}`);
+        }
+    },
+    findByName: async (name) => {
+        try {
+            if (!name) {
+                throw ERRORS.VALIDATION('Business name is required');
+            }
+            const sql = 'SELECT * FROM business WHERE name = ? AND is_active = 1 LIMIT 1';
+            const [rows] = await pool.query(sql, [name]);
+            return rows[0];
+        } catch (error) {
+            console.error('❌ Business.findByName error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to find business by name: ${error.message}`);
+        }
+    },
 };
 
 export default Business;

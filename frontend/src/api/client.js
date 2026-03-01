@@ -77,7 +77,21 @@ export const api = {
   
   getBusinessTeam: (id) => apiRequest(`/business/${id}/team`),
 
-  
+  // Invitations
+  validateInvite: (code) => apiRequest('/invitations/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  }),
+
+  joinBusiness: (token) => apiRequest('/invitations/join', {
+    method: 'POST',
+    body: JSON.stringify({ token })
+  }),
+
+  requestCode: (businessCode) => apiRequest('/invitations/request-code', {
+    method: 'POST',
+    body: JSON.stringify({ businessCode })
+  }),
 };
 
 export default api;

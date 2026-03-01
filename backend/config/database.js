@@ -10,7 +10,10 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true, 
     connectionLimit: 10,
-    queueLimit: 0            
+    queueLimit: 0,    
+    ssl: {
+    rejectUnauthorized: false // ← Prihvati self-signed certifikat
+  }
 });
 
 // Provjeri konekciju pri startu
