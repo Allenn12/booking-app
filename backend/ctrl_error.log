@@ -1,0 +1,72 @@
+ERROR: Incorrect datetime value: '2026-03-04T17:08:08.455Z' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '2026-03-04T17:08:08.455Z' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)
+ERROR: Incorrect datetime value: '2026-03-04T17:08:28.220Z' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '2026-03-04T17:08:28.220Z' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)
+ERROR: Incorrect datetime value: '2026-03-04T17:08:39.020Z' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '2026-03-04T17:08:39.020Z' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)
+ERROR: Incorrect datetime value: '2026-03-04T17:08:50.720Z' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '2026-03-04T17:08:50.720Z' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)
+ERROR: Incorrect datetime value: '202610-03-04T00:00' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '202610-03-04T00:00' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)
+ERROR: Incorrect datetime value: '2026-03-04T17:28:41.538Z' for column 'appointment_datetime' at row 1
+STACK: Error: Incorrect datetime value: '2026-03-04T17:28:41.538Z' for column 'appointment_datetime' at row 1
+    at PromisePool.query (C:\Users\KORISNIK\Documents\App\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at Object.create (file:///C:/Users/KORISNIK/Documents/App/backend/models/Appointment.js:60:41)
+    at create (file:///C:/Users/KORISNIK/Documents/App/backend/controllers/api/appointmentController.js:44:53)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:295:15
+    at processParams (C:\Users\KORISNIK\Documents\App\backend\node_modules\router\index.js:582:12)

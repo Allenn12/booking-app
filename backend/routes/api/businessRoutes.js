@@ -11,6 +11,7 @@ router.use(authMiddleware);
 // Business routes
 router.post('/', BusinessController.create);              // POST /api/v1/business
 router.get('/my', BusinessController.getMyBusinesses);    // GET /api/v1/business/my
+router.post('/select', BusinessController.selectBusiness); // POST /api/v1/business/select
 router.get('/:id', BusinessController.getById);           // GET /api/v1/business/:id
 router.put('/:id', BusinessController.update);            // PUT /api/v1/business/:id
 router.get('/:id/team', TeamController.getTeam);

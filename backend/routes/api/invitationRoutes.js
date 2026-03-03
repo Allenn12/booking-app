@@ -11,5 +11,6 @@ router.use(authMiddleware);
 
 router.post('/validate', InvitationController.validate);
 router.post('/join', InvitationController.join);
+router.post('/regenerate', InvitationController.regenerate);
 
 export default router;

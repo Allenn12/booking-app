@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import api from '../api/client';
 
 const AuthContext = createContext(null);
@@ -21,18 +22,23 @@ export function AuthProvider({ children }) {
    * - Can be called from anywhere (e.g., after verification)
    * - Refreshes auth state
    */
+  const [businesses, setBusinesses] = useState([]);
+
   async function checkSession() {
     try {
-      console.log('🔍 Checking session...');
-
-      // Try to get user businesses (ako ima session, uspjet će)
       const response = await api.checkSession();
-      setUser(response.user); // user object now contains hasBusinesses
-      console.log('✅ Session valid', response.user.email, '| Has Business:', response.user.hasBusinesses);
+      setUser(response.user);
+      setBusinesses(response.businesses || []);
+
+      if (response.flash) {
+        const { type, message } = response.flash;
+        if (type === 'success') toast.success(message);
+        else if (type === 'error') toast.error(message);
+        else toast.info(message);
+      }
     } catch (error) {
-      // Nema sessiona
-      console.log('❌ No session:', error.message);
       setUser(null);
+      setBusinesses([]);
     } finally {
       setLoading(false);
     }
@@ -41,9 +47,6 @@ export function AuthProvider({ children }) {
   async function login(credentials) {
     const response = await api.login(credentials);
     if (response.success) {
-      // response.user during login might not have hasBusinesses yet if it's from authController.login
-      // but if we updated authController.js to include it, it's fine.
-      // Let's call checkSession to be sure we have the latest state including businesses
       await checkSession();
       return response;
     }
@@ -51,7 +54,7 @@ export function AuthProvider({ children }) {
       setUser({ ...response.user, authenticated: false })
       return response;
     }
-    throw new Error(response.error);
+    throw new Error(response.message || 'Login failed');
   }
 
   async function register(userData) {
@@ -59,23 +62,25 @@ export function AuthProvider({ children }) {
     if (response.success) {
       return response;
     }
-    throw new Error(response.error);
+    throw new Error(response.message || 'Registration failed');
   }
 
   async function logout() {
     await api.logout();
     setUser(null);
+    setBusinesses([]);
     navigate('/login');
   }
 
   return (
     <AuthContext.Provider value={{
       user,
+      businesses,
       login,
       register,
       logout,
       loading,
-      checkSession // ⭐ Expose checkSession method!
+      checkSession
     }}>
       {children}
     </AuthContext.Provider>

@@ -38,10 +38,6 @@ const sessionStore = new MySQLSessionStore({
     expiration: 30 * 24 * 60 * 60 * 1000,  // 30 dana
 });
 
-sessionStore.onError = function(error) {
-    console.error('❌ Session store error:', error);
-};
-
 console.log('✅ MySQL Session Store konfiguriran');
 
 app.use(session({
@@ -55,7 +51,6 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // ⭐ LAX za dev!
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dana
-    domain: 'localhost'
   }
 }));
 
@@ -73,6 +68,7 @@ app.use((error, req, res, next) => {
   
   // Default
   console.error('🔴 UNKNOWN ERROR:', error);
+  if (error.stack) console.error(error.stack);
   return res.status(500).json({
     success: false,
     error: 'Desila se greška u sustavu',
