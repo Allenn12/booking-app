@@ -4,11 +4,18 @@ import { ERRORS } from '../utils/errors.js';
 
 const Invitation = {
     /**
-     * Create a permanent invitation for a business.
+     * Create an invitation for a business.
      * Generates a unique token for URLs and a readable code for manual entry.
+     * Default expiry is 48 hours for new codes.
      */
-    createPermanent: async ({ businessId, createdBy, role = 'employee' }) => {
+    create: async ({ businessId, createdBy, role = 'employee', expiresAt = null }) => {
         try {
+            // If no expiresAt provided, default to 48 hours from now
+            if (!expiresAt) {
+                const now = new Date();
+                expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+            }
+
             const token = crypto.randomBytes(32).toString('hex');
             
             // Generate a unique readable code: ABC-12345
@@ -26,26 +33,47 @@ const Invitation = {
             }
 
             const sql = `
-                INSERT INTO invitations (business_id, token, code, role, created_by)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO invitations (business_id, token, code, role, created_by, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
-            const [result] = await pool.query(sql, [businessId, token, code, role, createdBy]);
+            const [result] = await pool.query(sql, [businessId, token, code, role, createdBy, expiresAt]);
             
             return {
                 id: result.insertId,
                 token,
                 code,
-                role
+                role,
+                expires_at: expiresAt
             };
         } catch (error) {
-            console.error('❌ Invitation.createPermanent error:', error);
+            console.error('❌ Invitation.create error:', error);
             throw ERRORS.DATABASE(`Failed to create invitation: ${error.message}`);
+        }
+    },
+
+    /**
+     * Deactivate all existing invitations for a business.
+     * Used before regenerating a new code.
+     */
+    deactivateAllForBusiness: async (businessId) => {
+        try {
+            const sql = 'UPDATE invitations SET is_active = 0 WHERE business_id = ?';
+            await pool.query(sql, [businessId]);
+        } catch (error) {
+            throw ERRORS.DATABASE(`Failed to deactivate business invitations: ${error.message}`);
         }
     },
 
     findByToken: async (token) => {
         try {
-            const sql = 'SELECT * FROM invitations WHERE token = ? AND is_active = 1 LIMIT 1';
+            const sql = `
+                SELECT i.*, b.name as business_name 
+                FROM invitations i 
+                JOIN business b ON i.business_id = b.id
+                WHERE i.token = ? AND i.is_active = 1 
+                AND (i.expires_at IS NULL OR i.expires_at > NOW())
+                LIMIT 1
+            `;
             const [rows] = await pool.query(sql, [token]);
             return rows[0];
         } catch (error) {
@@ -59,7 +87,9 @@ const Invitation = {
                 SELECT i.*, b.name as business_name 
                 FROM invitations i
                 JOIN business b ON i.business_id = b.id
-                WHERE i.code = ? AND i.is_active = 1 LIMIT 1
+                WHERE i.code = ? AND i.is_active = 1 
+                AND (i.expires_at IS NULL OR i.expires_at > NOW())
+                LIMIT 1
             `;
             const [rows] = await pool.query(sql, [code]);
             return rows[0];

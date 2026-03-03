@@ -126,6 +126,12 @@ export async function verifyEmailToken(req, res, next) {
                 if (!alreadyMember) {
                     await UserBusiness.create(user.id, invite.business_id, invite.role);
                     await Invitation.incrementUsedCount(invite.id);
+
+                    // Add success flash message for new registration + join
+                    req.session.flash = { 
+                        type: 'success', 
+                        message: `Welcome! You have successfully joined ${invite.business_name}.` 
+                    };
                 }
             }
             delete req.session.pendingInviteToken;
@@ -293,16 +299,38 @@ export async function login(req, res, next) {
             });
             
             console.log('✅ JWT kreiran:', authToken.substring(0, 20) + '...');*/
+        
+            const businesses = await UserBusiness.getUserBusinesses(user.id);
+            let redirectTo = "/";
+            let activeBusinessId = null;
+            let userRole = null;
 
-        return res.status(200).json({
-            success: true,
-            message: "Uspješno ste se prijavili",
-            user: {
-                id: user.id,
-                email: user.email,
-                verificationLevel: user.verification_level,
-            },
-            redirectTo: "/dashboard",
+        if (businesses.length === 0) {
+            redirectTo = "/onboarding";
+        } else if (businesses.length === 1) {
+            activeBusinessId = Number(businesses[0].business_id);
+            userRole = businesses[0].role;
+            req.session.activeBusinessId = activeBusinessId;
+            req.session.role = userRole;
+            redirectTo = (userRole === 'owner' || userRole === 'admin') ? "/dashboard" : "/appointments";
+        } else if (businesses.length > 1) {
+            redirectTo = "/my-businesses";
+        }
+
+        req.session.save((err) => {
+            if (err) return next(err);
+            return res.status(200).json({
+                success: true,
+                message: "Uspješno ste se prijavili",
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    verificationLevel: user.verification_level,
+                    activeBusinessId,
+                    role: userRole
+                },
+                redirectTo
+            });
         });
     } catch (error) {
         next(error);
@@ -315,14 +343,29 @@ export async function checkSession(req, res, next){
     const user = await User.getByUserId(req.user.id);
     const businesses = await UserBusiness.getUserBusinesses(user.id);
 
+    // Get flash messages if any
+    const flash = req.session.flash;
+    if (flash) {
+        delete req.session.flash;
+    }
+
+    const activeBusinessId = req.session.activeBusinessId || null;
+    const currentBusiness = businesses.find(b => b.business_id === activeBusinessId);
+    const userRole = currentBusiness ? currentBusiness.role : null;
+
     return res.status(200).json({
       authenticated: true,
       user: {
         id: user.id,
         email: user.email,
         verificationLevel: user.verification_level,
-        hasBusinesses: businesses.length > 0
-      }
+        hasBusinesses: businesses.length > 0,
+        activeBusinessId: activeBusinessId ? Number(activeBusinessId) : null,
+        role: userRole
+      },
+      flash: flash || null,
+      businesses: businesses,
+      redirectTo: businesses.length === 0 ? '/onboarding' : null
     });
   } catch (error) {
     next(error);

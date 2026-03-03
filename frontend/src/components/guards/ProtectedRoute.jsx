@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 /**
@@ -43,17 +43,32 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
+  // 3.1. Email verification check
   if (user.verificationLevel !== 'active') {
     return <Navigate to="/verify-email" replace />;
   }
 
-  // ⭐ REDIRECT TO ONBOARDING IF NO BUSINESSES
+  // 4. Force business selection if authenticated but no context
+  const isSpecialPath = ['/my-businesses', '/onboarding'].includes(location.pathname);
+
+  // If no businesses at all, go to onboarding (unless already there)
   if (!user.hasBusinesses) {
-    console.log('⚠️ ProtectedRoute: User has no business, redirecting to /onboarding');
-    return <Navigate to="/onboarding" replace />;
+    if (location.pathname !== '/onboarding') {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return children; // Allow /onboarding
   }
 
-  // 4. USER AUTHENTICATED → Show protected page
+  // If has businesses but none selected, go to selection (unless already there)
+  if (!user.activeBusinessId && !isSpecialPath) {
+    return <Navigate to="/my-businesses" replace />;
+  }
+
+  // 5. Role-based restriction: Only owner/admin for dashboard
+  if (location.pathname === '/dashboard' && user.role === 'employee') {
+    return <Navigate to="/appointments" replace />;
+  }
+
   // WHY: User has valid session, allow access
   console.log('✅ ProtectedRoute: User authenticated and has business, showing protected page');
   return children;

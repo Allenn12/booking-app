@@ -39,7 +39,7 @@ function VerifyEmailPage() {
       await checkSession(); // Refresh React session state
 
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/onboarding');
       }, 2000); // 2 sekunde da vidi success poruku
     }
 
@@ -67,7 +67,7 @@ function VerifyEmailPage() {
           await checkSession();
 
           setTimeout(() => {
-            if (!stopped) navigate('/dashboard');
+            if (!stopped) navigate('/onboarding');
           }, 2000); // ⭐ 2 sekunde da vidi success poruku!
         }
       } catch (err) {
