@@ -77,6 +77,11 @@ export const api = {
   
   getBusinessTeam: (id) => apiRequest(`/business/${id}/team`),
 
+  selectBusiness: (businessId) => apiRequest('/business/select', {
+    method: 'POST',
+    body: JSON.stringify({ businessId })
+  }),
+
   // Invitations
   validateInvite: (code) => apiRequest('/invitations/validate', {
     method: 'POST',
@@ -88,9 +93,33 @@ export const api = {
     body: JSON.stringify({ token })
   }),
 
+  regenerateInviteCode: (businessId) => apiRequest('/invitations/regenerate', {
+    method: 'POST',
+    body: JSON.stringify({ businessId })
+  }),
+
   requestCode: (businessCode) => apiRequest('/invitations/request-code', {
     method: 'POST',
     body: JSON.stringify({ businessCode })
+  }),
+
+  // Appointments
+  getAppointments: (date) => apiRequest(`/appointments${date ? `?date=${date}` : ''}`),
+  
+  getAppointmentById: (id) => apiRequest(`/appointments/${id}`),
+  
+  createAppointment: (data) => apiRequest('/appointments', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  
+  updateAppointment: (id, data) => apiRequest(`/appointments/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  
+  deleteAppointment: (id) => apiRequest(`/appointments/${id}`, {
+    method: 'DELETE'
   }),
 };
 

@@ -60,14 +60,54 @@ const InvitationController = {
         }
     },
 
+    // POST /api/v1/invitations/regenerate
+    regenerate: async (req, res, next) => {
+        try {
+            const { businessId } = req.body;
+            const userId = req.session.userId;
+
+            if (!businessId) throw ERRORS.VALIDATION('Business ID is required');
+
+            // Security: Check if user is owner or admin of the business
+            const membership = await UserBusiness.findByUserAndBusiness(userId, businessId);
+            if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+                throw ERRORS.FORBIDDEN('You do not have permission to regenerate invite codes for this business');
+            }
+
+            // Deactivate old codes
+            await Invitation.deactivateAllForBusiness(businessId);
+
+            // Generate new code (default 48h expiry)
+            const newInvite = await Invitation.create({
+                businessId,
+                createdBy: userId,
+                role: 'employee'
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'New invite code generated successfully',
+                data: {
+                    code: newInvite.code,
+                    token: newInvite.token,
+                    expires_at: newInvite.expires_at
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
     // GET /join/:token (Public link)
     handlePublicLink: async (req, res, next) => {
         try {
             const { token } = req.params;
             const invite = await Invitation.findByToken(token);
 
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
             if (!invite) {
-                return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/invite-invalid`);
+                return res.redirect(`${frontendUrl}/invite-invalid`);
             }
 
             // Save token to session for later (after login/register)
@@ -81,13 +121,25 @@ const InvitationController = {
                 if (!existingMember) {
                     await UserBusiness.create(userId, invite.business_id, invite.role);
                     await Invitation.incrementUsedCount(invite.id);
+                    
+                    // Add success flash message
+                    req.session.flash = { 
+                        type: 'success', 
+                        message: `Successfully joined ${invite.business_name}!` 
+                    };
+                } else {
+                    // Add info flash message
+                    req.session.flash = { 
+                        type: 'info', 
+                        message: `You are already a member of ${invite.business_name}.` 
+                    };
                 }
                 
-                return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`);
+                return res.redirect(`${frontendUrl}/dashboard`);
             }
 
             // Not logged in, redirect to register
-            res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/register?invite=${token}`);
+            res.redirect(`${frontendUrl}/register?invite=${token}`);
         } catch (error) {
             next(error);
         }

@@ -37,8 +37,8 @@ export const BusinessController = {
       // 4. Add owner to user_business table (relationship)
       await UserBusiness.create(userId, business, 'owner');
       
-      // 5. Auto-generate permanent invitation
-      const invite = await Invitation.createPermanent({ 
+      // 5. Auto-generate invitation (default 48h)
+      const invite = await Invitation.create({ 
         businessId: business, 
         createdBy: userId, 
         role: 'employee' 
@@ -166,6 +166,41 @@ export const BusinessController = {
         data: team
       });
       
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // POST /api/v1/business/select
+  selectBusiness: async (req, res, next) => {
+    try {
+      const { businessId } = req.body;
+      const userId = req.session.userId;
+
+      if (!businessId) throw ERRORS.VALIDATION('Business ID is required');
+
+      // Verify user has access
+      const membership = await UserBusiness.findByUserAndBusiness(userId, businessId);
+      if (!membership) throw ERRORS.FORBIDDEN('You do not have access to this business');
+
+      // Store in session
+      req.session.activeBusinessId = Number(businessId);
+      req.session.role = membership.role;
+
+      const redirectTo = (membership.role === 'owner' || membership.role === 'admin') ? "/dashboard" : "/appointments";
+
+      req.session.save((err) => {
+        if (err) return next(err);
+        res.status(200).json({
+          success: true,
+          message: 'Business selected',
+          data: {
+            businessId,
+            role: membership.role,
+            redirectTo
+          }
+        });
+      });
     } catch (error) {
       next(error);
     }

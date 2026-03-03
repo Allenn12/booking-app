@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import PublicRoute from '../components/guards/PublicRoute';
 import ProtectedRoute from '../components/guards/ProtectedRoute';
 import NeutralRoute from '../components/guards/NeutralRoute';
+import MainLayout from '../components/layout/MainLayout';
 
 // ============================================
 // IMPORT ALL PAGES
@@ -17,6 +18,8 @@ import EmailVerifiedPage from '../pages/public/EmailVerifiedPage';
 // Authenticated pages
 import Dashboard from '../pages/app/Dashboard';
 import Calendar from '../pages/app/Calendar';
+import Appointments from '../pages/app/Appointments';
+import MyBusinesses from '../pages/app/MyBusinesses';
 import OnboardingPage from '../pages/app/OnboardingPage';
 
 // ============================================
@@ -60,6 +63,14 @@ export const routeConfig = {
     {
       path: '/calendar',
       component: Calendar
+    },
+    {
+      path: '/appointments',
+      component: Appointments
+    },
+    {
+      path: '/my-businesses',
+      component: MyBusinesses
     }
   ]
 };
@@ -106,8 +117,10 @@ export function AppRoutes() {
           key={path}
           path={path}
           element={
-            <ProtectedRoute>            {/* ← Wrap sa ProtectedRoute guard */}
-              <Component />
+            <ProtectedRoute>
+              <MainLayout>
+                <Component />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
