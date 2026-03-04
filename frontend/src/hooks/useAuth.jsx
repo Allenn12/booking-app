@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../api/client';
+import { flushSync } from 'react-dom';
 
 const AuthContext = createContext(null);
 
@@ -67,9 +68,16 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     await api.logout();
-    setUser(null);
-    setBusinesses([]);
-    navigate('/login');
+    // 1. Navigate to the Home page first (which is now safely a NeutralRoute)
+    navigate('/');
+
+    // 2. Delay clearing the user state so ProtectedRoute doesn't panic and
+    //    redirect to /login before the unmount finishes.
+    setTimeout(() => {
+      setUser(null);
+      setBusinesses([]);
+      toast.success('Logged out successfully');
+    }, 10);
   }
 
   return (
