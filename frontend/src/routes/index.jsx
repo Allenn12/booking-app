@@ -44,12 +44,12 @@ import OnboardingPage from '../pages/app/OnboardingPage';
 export const routeConfig = {
   // Public routes (accessible without authentication)
   public: [
-    { path: '/', component: HomePage },
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
   ],
 
   neutral: [
+    { path: '/', component: HomePage },
     { path: '/verify-email', component: VerifyEmailPage },
     { path: '/onboarding', component: OnboardingPage },
   ],
