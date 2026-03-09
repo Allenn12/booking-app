@@ -99,6 +99,11 @@ export const BusinessController = {
       if (!business) {
         throw ERRORS.NOT_FOUND('Business not found');
       }
+
+      // Get hours
+      const BusinessHour = (await import('../../models/BusinessHour.js')).default;
+      const hours = await BusinessHour.getByBusinessId(id);
+      business.business_hours = hours || [];
       
       res.status(200).json({
         success: true,
@@ -110,12 +115,12 @@ export const BusinessController = {
     }
   },
   
-  // PUT /api/v1/business/:id - Update business
+  // PATCH /api/v1/business/:id - Update business
   update: async (req, res, next) => {
     try {
       const { id } = req.params;
       const userId = req.session.userId;
-      const { name, phone, email, address, city, post_code, country_id } = req.body;
+      const { name, phone, email, address, city, post_code, country_id, business_hours } = req.body;
       
       // Security: Check da user ima pristup businessu
       const hasAccess = await UserBusiness.checkAccess(userId, id);
@@ -123,7 +128,7 @@ export const BusinessController = {
         throw ERRORS.FORBIDDEN('You do not have access to this business');
       }
       
-      // Update business
+      // Update business details
       const updated = await Business.update(id, {
         name,
         phone,
@@ -137,6 +142,12 @@ export const BusinessController = {
       if (!updated) {
         throw ERRORS.NOT_FOUND('Business not found');
       }
+
+      // Update business hours if provided
+      if (business_hours && Array.isArray(business_hours)) {
+        const BusinessHour = (await import('../../models/BusinessHour.js')).default;
+        await BusinessHour.updateForBusiness(id, business_hours);
+      }
       
       res.status(200).json({
         success: true,
@@ -149,21 +160,46 @@ export const BusinessController = {
   },
   getTeam: async (req, res, next) => {
     try {
-      const { businessId } = req.params;
+      const { id } = req.params; // Using standard :id from route
       const userId = req.session.userId;
       
       // Security: Check da user ima pristup businessu
-      const hasAccess = await UserBusiness.checkAccess(userId, businessId);
+      const hasAccess = await UserBusiness.checkAccess(userId, id);
       if (!hasAccess) {
         throw ERRORS.FORBIDDEN('You do not have access to this business');
       }
       
       // Get team members
-      const team = await UserBusiness.getBusinessUsers(businessId);
+      const team = await UserBusiness.getBusinessUsers(id);
       
       res.status(200).json({
         success: true,
         data: team
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getServices: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const userId = req.session.userId;
+      
+      // Security: Check da user ima pristup businessu
+      const hasAccess = await UserBusiness.checkAccess(userId, id);
+      if (!hasAccess) {
+        throw ERRORS.FORBIDDEN('You do not have access to this business');
+      }
+      
+      // Lazy load Service model to avoid circular logic
+      const Service = (await import('../../models/Service.js')).default;
+      const services = await Service.findByBusinessId(id);
+      
+      res.status(200).json({
+        success: true,
+        data: services
       });
       
     } catch (error) {

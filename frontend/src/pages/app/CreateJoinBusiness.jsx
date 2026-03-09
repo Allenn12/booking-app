@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../api/client';
 import { toast } from 'sonner';
 
-const OnboardingPage = () => {
+const CreateJoinBusiness = () => {
     const [view, setView] = useState('CHOICE'); // CHOICE, CREATE, JOIN, CONFIRM
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -49,7 +49,7 @@ const OnboardingPage = () => {
                 toast.success('Business created successfully!');
                 await api.selectBusiness(res.data.businessId);
                 await checkSession();
-                navigate('/dashboard');
+                navigate('/business/overview');
             }
         } catch (err) {
             setError(err.message);
@@ -96,7 +96,6 @@ const OnboardingPage = () => {
         }
     };
 
-
     const handleInviteCodeChange = (e) => {
         // Remove all non-alphanumeric characters and convert to uppercase
         let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -113,7 +112,7 @@ const OnboardingPage = () => {
         <div className="onboarding-container" style={{ padding: '40px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
             {view === 'CHOICE' && (
                 <div>
-                    <h1>Welcome! How would you like to start?</h1>
+                    <h1>How would you like to start?</h1>
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '40px' }}>
                         <button
                             onClick={() => setView('CREATE')}
@@ -238,4 +237,4 @@ const OnboardingPage = () => {
     );
 };
 
-export default OnboardingPage;
+export default CreateJoinBusiness;

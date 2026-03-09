@@ -21,6 +21,12 @@ import Calendar from '../pages/app/Calendar';
 import Appointments from '../pages/app/Appointments';
 import MyBusinesses from '../pages/app/MyBusinesses';
 import OnboardingPage from '../pages/app/OnboardingPage';
+import CreateJoinBusiness from '../pages/app/CreateJoinBusiness';
+
+// Business Pages
+import Overview from '../pages/app/business/Overview';
+import Services from '../pages/app/business/Services';
+import Team from '../pages/app/business/Team';
 
 // ============================================
 // ROUTE CONFIGURATION
@@ -71,6 +77,22 @@ export const routeConfig = {
     {
       path: '/my-businesses',
       component: MyBusinesses
+    },
+    {
+      path: '/create-join',
+      component: CreateJoinBusiness
+    },
+    {
+      path: '/business/overview',
+      component: Overview
+    },
+    {
+      path: '/business/services',
+      component: Services
+    },
+    {
+      path: '/business/team',
+      component: Team
     }
   ]
 };

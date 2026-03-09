@@ -46,7 +46,7 @@ const InvitationController = {
 
             // Check if already a member
             const existingMember = await UserBusiness.findByUserAndBusiness(userId, invite.business_id);
-            if (existingMember) throw ERRORS.CONFLICT('ALREADY_MEMBER');
+            if (existingMember) throw ERRORS.BAD_REQUEST('You are already a member of this team.');
 
             // Join business
             await UserBusiness.create(userId, invite.business_id, invite.role);
@@ -54,7 +54,7 @@ const InvitationController = {
             // Update usage
             await Invitation.incrementUsedCount(invite.id);
 
-            res.status(200).json({ success: true, message: 'Joined successfully' });
+            res.status(200).json({ success: true, message: 'Joined successfully', data: { businessId: invite.business_id } });
         } catch (error) {
             next(error);
         }

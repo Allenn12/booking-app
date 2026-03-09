@@ -26,6 +26,58 @@ export const TeamController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  // PATCH /api/v1/business/:id/team/:userId/role
+  updateRole: async (req, res, next) => {
+    try {
+      const { id, userId: targetUserId } = req.params;
+      const { role: newRole } = req.body;
+      const currentUserId = req.session.userId;
+
+      // Ensure caller is owner or admin of business
+      const membership = await UserBusiness.findByUserAndBusiness(currentUserId, id);
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw ERRORS.FORBIDDEN('You must be an owner or admin to change roles');
+      }
+
+      await UserBusiness.updateRole(id, targetUserId, newRole);
+
+      res.status(200).json({
+        success: true,
+        message: 'Member role updated successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // DELETE /api/v1/business/:id/team/:userId
+  removeMember: async (req, res, next) => {
+    try {
+      const { id, userId: targetUserId } = req.params;
+      const currentUserId = req.session.userId;
+
+      // Ensure caller is owner or admin of business
+      const membership = await UserBusiness.findByUserAndBusiness(currentUserId, id);
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw ERRORS.FORBIDDEN('You must be an owner or admin to remove members');
+      }
+
+      // Prevent removing self
+      if (Number(currentUserId) === Number(targetUserId)) {
+          throw ERRORS.FORBIDDEN('You cannot remove yourself. Leave the business instead.');
+      }
+
+      await UserBusiness.removeUser(id, targetUserId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Member removed successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
   }
   
 };

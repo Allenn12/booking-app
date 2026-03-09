@@ -267,6 +267,48 @@ const UserBusiness = {
             throw ERRORS.DATABASE(`Failed to find business owner: ${error.message}`);
         }
     },
+    updateRole: async (businessId, targetUserId, newRole) => {
+        try {
+            if (!businessId || !targetUserId || !newRole) {
+                throw ERRORS.VALIDATION('Missing required parameters for role update');
+            }
+            const validRoles = ['admin', 'employee'];
+            if (!validRoles.includes(newRole)) {
+                throw ERRORS.VALIDATION('Invalid role. Must be admin or employee');
+            }
+
+            const sql = 'UPDATE user_business SET role = ? WHERE business_id = ? AND user_id = ? AND role != "owner"';
+            const [result] = await pool.query(sql, [newRole, businessId, targetUserId]);
+            
+            if (result.affectedRows === 0) {
+                 throw ERRORS.NOT_FOUND('User not found in business or cannot change owner role');
+            }
+            return true;
+        } catch (error) {
+            console.error('❌ UserBusiness.updateRole error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to update user role: ${error.message}`);
+        }
+    },
+    removeUser: async (businessId, targetUserId) => {
+        try {
+            if (!businessId || !targetUserId) {
+                throw ERRORS.VALIDATION('Missing required parameters for user removal');
+            }
+
+            const sql = 'DELETE FROM user_business WHERE business_id = ? AND user_id = ? AND role != "owner"';
+            const [result] = await pool.query(sql, [businessId, targetUserId]);
+            
+            if (result.affectedRows === 0) {
+                 throw ERRORS.NOT_FOUND('User not found in business or cannot remove owner');
+            }
+            return true;
+        } catch (error) {
+            console.error('❌ UserBusiness.removeUser error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to remove user: ${error.message}`);
+        }
+    }
 };
 
 export default UserBusiness;

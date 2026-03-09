@@ -1,5 +1,5 @@
 import express from 'express';
-import { AppointmentController } from '../../controllers/api/appointmentController.js';
+import  {AppointmentController}  from '../../controllers/api/appointmentController.js';
 import authMiddleware from '../../middleware/authMiddleware.js';
 import { ensureBusinessContext } from '../../middleware/businessMiddleware.js';
 
