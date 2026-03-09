@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../api/client';
-import { flushSync } from 'react-dom';
 
 const AuthContext = createContext(null);
 

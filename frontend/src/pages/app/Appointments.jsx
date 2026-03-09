@@ -6,23 +6,45 @@ import { toast } from 'sonner';
 function Appointments() {
     const { user } = useAuth();
     const [appointments, setAppointments] = useState([]);
+    const [services, setServices] = useState([]);
+    const [team, setTeam] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Map initial date to local
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [showModal, setShowModal] = useState(false);
     const [editingAppointment, setEditingAppointment] = useState(null);
 
-    // Basic form state
+    // Form state
     const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
+        clientName: '',
+        clientPhone: '',
         appointment_datetime: '',
-        notes: '',
-        status: 'scheduled'
+        service_id: '',
+        assigned_to_user_id: '',
+        notes: ''
     });
 
     useEffect(() => {
-        fetchAppointments();
-    }, [date]);
+        if (user?.activeBusinessId) {
+            fetchInitialData();
+            fetchAppointments();
+        }
+    }, [user?.activeBusinessId, date]);
+
+    const fetchInitialData = async () => {
+        try {
+            const [servicesRes, teamRes] = await Promise.all([
+                api.getBusinessServices(user.activeBusinessId),
+                api.getBusinessTeam(user.activeBusinessId)
+            ]);
+
+            if (servicesRes.success) setServices(servicesRes.data.filter(s => s.is_active));
+            if (teamRes.success) setTeam(teamRes.data);
+        } catch (err) {
+            toast.error('Failed to load initial configuration data');
+        }
+    };
 
     const fetchAppointments = async () => {
         try {
@@ -63,47 +85,53 @@ function Appointments() {
         }
     };
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             if (editingAppointment) {
-                await api.updateAppointment(editingAppointment.id, formData);
-                toast.success('Appointment updated');
+                // Update implementation can be expanded later
+                toast.error('Edit not currently configured for complex appointments');
             } else {
-                const res = await api.createAppointment(formData);
-                toast.success('Appointment created');
-                if (res.data.messaging_enabled) {
-                    toast.info('Messaging is enabled for this business');
+                const payload = {
+                    ...formData,
+                    service_id: Number(formData.service_id),
+                    assigned_to_user_id: Number(formData.assigned_to_user_id)
+                };
+
+                const res = await api.createAppointment(payload);
+                if (res.success) {
+                    toast.success('Appointment successfully created');
+                    if (res.data?.messaging_enabled) toast.info('Client notified via SMS');
                 }
             }
             setShowModal(false);
             setEditingAppointment(null);
             fetchAppointments();
         } catch (err) {
-            toast.error('Failed to save appointment');
+            // Displays exact 400 Bad Request error from Backend (Overlaps, Hours, Phone)
+            toast.error(err.message || 'Failed to save appointment. Verify details.');
         }
     };
 
-    const openEdit = (appt) => {
-        setEditingAppointment(appt);
-        setFormData({
-            name: appt.name || '',
-            phone: appt.phone || '',
-            appointment_datetime: appt.appointment_datetime.split('.')[0], // strip ms/Z
-            notes: appt.notes || '',
-            status: appt.status
-        });
-        setShowModal(true);
-    };
-
     const openCreate = () => {
+        if (services.length === 0 || team.length === 0) {
+            toast.error('You must define at least one Service and one Team Member before booking.');
+            return;
+        }
+
         setEditingAppointment(null);
         setFormData({
-            name: '',
-            phone: '',
+            clientName: '',
+            clientPhone: '',
             appointment_datetime: `${date}T10:00`,
-            notes: '',
-            status: 'scheduled'
+            service_id: services[0]?.id || '',
+            assigned_to_user_id: user?.id || team[0]?.id || '',
+            notes: ''
         });
         setShowModal(true);
     };
@@ -113,85 +141,150 @@ function Appointments() {
         return appt.user_id === user?.id || appt.assigned_to_user_id === user?.id;
     };
 
+    const getServiceName = (id) => services.find(s => s.id === id)?.name || `Service #${id}`;
+    const getWorkerName = (id) => team.find(w => w.id === id)?.name || `Worker #${id}`;
+
     return (
-        <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h1>Appointments</h1>
-                <button onClick={openCreate} style={{ padding: '10px 20px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                <h1 style={{ color: '#2b2b2b' }}>Appointments</h1>
+                <button
+                    onClick={openCreate}
+                    style={{
+                        padding: '10px 20px', background: '#0d6efd', color: 'white',
+                        border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
+                    }}
+                >
                     + New Appointment
                 </button>
             </div>
 
             <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-                <label>Filter by Date: </label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ddd' }} />
+                <label style={{ marginRight: '10px', fontWeight: 'bold' }}>Filter Date: </label>
+                <input
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
             </div>
 
             {loading ? (
-                <p>Loading...</p>
+                <p>Loading schedule...</p>
             ) : appointments.length === 0 ? (
-                <p>No appointments for this day.</p>
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '15px' }}>📅</div>
+                    <h2 style={{ margin: '0 0 10px 0', color: '#333' }}>No Appointments</h2>
+                    <p style={{ color: '#666' }}>Your schedule is clear for this day.</p>
+                </div>
             ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', background: 'white' }}>
-                    <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                            <th style={{ padding: '12px' }}>Time</th>
-                            <th style={{ padding: '12px' }}>Client</th>
-                            <th style={{ padding: '12px' }}>Phone</th>
-                            <th style={{ padding: '12px' }}>Status</th>
-                            <th style={{ padding: '12px' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {appointments.map(appt => (
-                            <tr key={appt.id} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: '12px' }}>{new Date(appt.appointment_datetime).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}</td>
-                                <td style={{ padding: '12px' }}>{appt.name}</td>
-                                <td style={{ padding: '12px' }}>{appt.phone}</td>
-                                <td style={{ padding: '12px' }}>
-                                    <select
-                                        value={appt.status}
-                                        onChange={e => handleStatusChange(appt.id, e.target.value)}
-                                        style={{ padding: '4px', borderRadius: '4px' }}
-                                    >
-                                        <option value="scheduled">Scheduled</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                        <option value="no_show">No Show</option>
-                                    </select>
-                                </td>
-                                <td style={{ padding: '12px', display: 'flex', gap: '10px' }}>
-                                    <button onClick={() => openEdit(appt)} style={{ padding: '5px 10px', background: '#ffc107', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>Edit</button>
-                                    {canDelete(appt) && (
-                                        <button onClick={() => handleDelete(appt.id)} style={{ padding: '5px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>Delete</button>
-                                    )}
-                                </td>
+                <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                            <tr>
+                                <th style={{ padding: '16px' }}>Time</th>
+                                <th style={{ padding: '16px' }}>Client</th>
+                                <th style={{ padding: '16px' }}>Details</th>
+                                <th style={{ padding: '16px' }}>Status</th>
+                                <th style={{ padding: '16px' }}>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {appointments.map(appt => (
+                                <tr key={appt.id} style={{ borderBottom: '1px solid #eee' }}>
+                                    <td style={{ padding: '16px', fontWeight: '600' }}>
+                                        {new Date(appt.appointment_datetime).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        <div style={{ fontWeight: '500', color: '#2b2b2b' }}>{appt.name}</div>
+                                        <div style={{ fontSize: '13px', color: '#666' }}>{appt.phone}</div>
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        <div style={{ fontWeight: '500', color: '#0d6efd' }}>{getServiceName(appt.service_id)}</div>
+                                        <div style={{ fontSize: '13px', color: '#666' }}>with {getWorkerName(appt.assigned_to_user_id)}</div>
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        <select
+                                            value={appt.status}
+                                            onChange={e => handleStatusChange(appt.id, e.target.value)}
+                                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                        >
+                                            <option value="scheduled">Scheduled</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                            <option value="no_show">No Show</option>
+                                        </select>
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        {canDelete(appt) && (
+                                            <button
+                                                onClick={() => handleDelete(appt.id)}
+                                                style={{ padding: '6px 12px', background: '#fff5f5', color: '#dc3545', border: '1px solid #ffc9c9', borderRadius: '4px', cursor: 'pointer' }}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
+            {/* Create Appointment Modal */}
             {showModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '400px' }}>
-                        <h2>{editingAppointment ? 'Edit Appointment' : 'New Appointment'}</h2>
-                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <label>Client Name
-                                <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                            </label>
-                            <label>Phone
-                                <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                            </label>
-                            <label>Date & Time
-                                <input type="datetime-local" required value={formData.appointment_datetime} onChange={e => setFormData({ ...formData, appointment_datetime: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                            </label>
-                            <label>Notes
-                                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                            </label>
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Save</button>
-                                <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, padding: '10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
+                }}>
+                    <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0 }}>New Appointment</h3>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999' }}>&times;</button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Client Name *</label>
+                                    <input type="text" name="clientName" required value={formData.clientName} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Client Phone *</label>
+                                    <input type="tel" name="clientPhone" required value={formData.clientPhone} onChange={handleChange} placeholder="e.g. +38591234567" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Date & Time *</label>
+                                <input type="datetime-local" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Service *</label>
+                                    <select name="service_id" required value={formData.service_id} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}>
+                                        {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration_minutes}m)</option>)}
+                                    </select>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>With Worker *</label>
+                                    <select name="assigned_to_user_id" required value={formData.assigned_to_user_id} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}>
+                                        {team.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Notes</label>
+                                <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box', resize: 'vertical' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '10px 16px', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+                                <button type="submit" style={{ padding: '10px 24px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Book Appointment</button>
                             </div>
                         </form>
                     </div>

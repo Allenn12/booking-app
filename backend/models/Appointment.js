@@ -22,7 +22,43 @@ const Appointment = {
         return rows;
     },
 
-    create: async (data) => {
+    checkOverlap: async (assignedToUserId, startDatetime, durationMinutes) => {
+        try {
+            // Checks for any overlap between requested time block and existing scheduled appointments for the given user.
+            const sql = `
+                SELECT a.id 
+                FROM appointment a
+                JOIN services s ON a.service_id = s.id
+                WHERE a.assigned_to_user_id = ?
+                  AND a.status = 'scheduled'
+                  AND a.deleted_at IS NULL
+                  AND (
+                      -- New Start inside Existing
+                      ? >= a.appointment_datetime AND ? < DATE_ADD(a.appointment_datetime, INTERVAL s.duration_minutes MINUTE)
+                      OR
+                      -- New End inside Existing
+                      DATE_ADD(?, INTERVAL ? MINUTE) > a.appointment_datetime AND DATE_ADD(?, INTERVAL ? MINUTE) <= DATE_ADD(a.appointment_datetime, INTERVAL s.duration_minutes MINUTE)
+                      OR
+                      -- New surrounds Existing completely
+                      ? <= a.appointment_datetime AND DATE_ADD(?, INTERVAL ? MINUTE) >= DATE_ADD(a.appointment_datetime, INTERVAL s.duration_minutes MINUTE)
+                  )
+            `;
+            const params = [
+                assignedToUserId,
+                startDatetime, startDatetime,
+                startDatetime, durationMinutes, startDatetime, durationMinutes,
+                startDatetime, startDatetime, durationMinutes
+            ];
+            
+            const [rows] = await pool.query(sql, params);
+            return rows.length > 0; // True if overlap exists
+        } catch (error) {
+            console.error('❌ Appointment.checkOverlap error:', error);
+            throw ERRORS.DATABASE('Failed to check for appointment overlaps');
+        }
+    },
+
+    create: async (data, transactionConnection = null) => {
         try {
             const {
                 business_id,
@@ -57,7 +93,8 @@ const Appointment = {
                 notes || null
             ];
 
-            const [result] = await pool.query(sql, params);
+            const db = transactionConnection || pool;
+            const [result] = await db.query(sql, params);
             return result.insertId;
         } catch (error) {
             console.error('❌ Appointment.create error:', error);

@@ -11,6 +11,7 @@ export class AppError extends Error {
 export const ERRORS = {
   CONFLICT: (msg) => new AppError(msg, 409, 'CONFLICT'),
   VALIDATION: (msg) => new AppError(msg, 400, 'VALIDATION'),
+  BAD_REQUEST: (msg) => new AppError(msg, 400, 'BAD_REQUEST'),
   DATABASE: (msg) => new AppError(msg, 500, 'DATABASE'),
   NOT_FOUND: (msg) => new AppError(msg, 404, 'NOT_FOUND'),
   AUTH: (msg) => new AppError(msg, 401, 'AUTH'),

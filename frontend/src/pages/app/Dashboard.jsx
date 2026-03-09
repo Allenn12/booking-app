@@ -7,54 +7,6 @@ function Dashboard() {
   const { logout, user } = useAuth();
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(null);
-
-  const fetchBusinesses = async () => {
-    try {
-      const res = await api.getMyBusinesses();
-      if (res.success) {
-        console.log('Fetched businesses:', res.data); // DEBUG
-        setBusinesses(res.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch businesses:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBusinesses();
-  }, []);
-
-  const handleRegenerate = async (businessId) => {
-    try {
-      setRegenerating(businessId);
-      const res = await api.regenerateInviteCode(businessId);
-      if (res.success) {
-        toast.success(res.message);
-        // Refresh business list or just update local state
-        await fetchBusinesses();
-      }
-    } catch (err) {
-      toast.error(err.message || 'Failed to regenerate code');
-    } finally {
-      setRegenerating(null);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    return date.toLocaleString('hr-HR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
       <h1>🎉 Dashboard</h1>
@@ -72,39 +24,10 @@ function Dashboard() {
                 <p>Role: <strong>{biz.role.toUpperCase()}</strong></p>
 
                 {(biz.role === 'owner' || biz.role === 'admin') && (
-                  <div style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '4px' }}>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold' }}>Invite Team Members:</p>
-                    {biz.invite_token ? (
-                      <>
-                        <p style={{ margin: '5px 0' }}>Invite Link: <code style={{ color: '#007bff' }}>{window.location.origin.replace('5173', '3000')}/join/{biz.invite_token}</code></p>
-                        <p style={{ margin: '5px 0' }}>Invite Code: <strong>{biz.invite_code}</strong></p>
-                        {biz.expires_at && (
-                          <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>
-                            Expires: <span style={{ color: new Date(biz.expires_at) < new Date() ? '#dc3545' : 'inherit' }}>{formatDate(biz.expires_at)}</span>
-                          </p>
-                        )}
-
-                        <button
-                          onClick={() => handleRegenerate(biz.business_id)}
-                          disabled={regenerating === biz.business_id}
-                          style={{
-                            marginTop: '10px',
-                            padding: '6px 12px',
-                            fontSize: '13px',
-                            background: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            opacity: regenerating === biz.business_id ? 0.7 : 1
-                          }}
-                        >
-                          {regenerating === biz.business_id ? 'Generating...' : 'Regenerate Code'}
-                        </button>
-                      </>
-                    ) : (
-                      <p style={{ color: '#666', fontSize: '14px', fontStyle: 'italic' }}>No active invitation link found for this business. Please contact support or check if invitations are enabled.</p>
-                    )}
+                  <div style={{ marginTop: '15px' }}>
+                    <p style={{ margin: '0', fontSize: '14px', color: '#666' }}>
+                      Navigate to the <strong>Team</strong> page to manage members and invites.
+                    </p>
                   </div>
                 )}
               </div>

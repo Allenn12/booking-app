@@ -24,7 +24,7 @@ async function apiRequest(endpoint, options = {}) {
   console.log('✅ Response Data:', data); // ⭐ DEBUG LOG
 
   if (!response.ok) {
-    const error = new Error(data.message || 'API request failed');
+    const error = new Error(data.error || 'API request failed');
     error.code = data.code;   // ⭐ Proslijedi code!
     error.status = response.status;
     throw error;  
@@ -55,8 +55,8 @@ export const api = {
 
   checkSession: () => apiRequest('/auth/check-session'),
   
-  
   getCountries: () => apiRequest('/countries'),
+  getJobs: () => apiRequest('/jobs'),
   
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   
@@ -71,11 +71,36 @@ export const api = {
   }),
   
   updateBusiness: (id, businessData) => apiRequest(`/business/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(businessData)
   }),
   
   getBusinessTeam: (id) => apiRequest(`/business/${id}/team`),
+
+  updateTeamMemberRole: (businessId, userId, role) => apiRequest(`/business/${businessId}/team/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role })
+  }),
+
+  removeTeamMember: (businessId, userId) => apiRequest(`/business/${businessId}/team/${userId}`, {
+    method: 'DELETE'
+  }),
+
+  getBusinessServices: (id) => apiRequest(`/business/${id}/services`),
+
+  createService: (businessId, serviceData) => apiRequest(`/business/${businessId}/services`, {
+    method: 'POST',
+    body: JSON.stringify(serviceData)
+  }),
+
+  updateService: (businessId, serviceId, serviceData) => apiRequest(`/business/${businessId}/services/${serviceId}`, {
+    method: 'PUT',
+    body: JSON.stringify(serviceData)
+  }),
+
+  deleteService: (businessId, serviceId) => apiRequest(`/business/${businessId}/services/${serviceId}`, {
+    method: 'DELETE'
+  }),
 
   selectBusiness: (businessId) => apiRequest('/business/select', {
     method: 'POST',
