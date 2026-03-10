@@ -128,6 +128,9 @@ export const api = {
     body: JSON.stringify({ businessCode })
   }),
 
+  // Dashboard
+  getDashboardStats: (businessId) => apiRequest(`/business/${businessId}/dashboard`),
+
   // Appointments
   getAppointments: (date) => apiRequest(`/appointments${date ? `?date=${date}` : ''}`),
   

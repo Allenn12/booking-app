@@ -19,11 +19,13 @@ function Appointments() {
     const [formData, setFormData] = useState({
         clientName: '',
         clientPhone: '',
-        appointment_datetime: '',
+        appointment_date: '',
+        appointment_time: '',
         service_id: '',
         assigned_to_user_id: '',
         notes: ''
     });
+    const [phoneError, setPhoneError] = useState('');
 
     useEffect(() => {
         if (user?.activeBusinessId) {
@@ -88,10 +90,34 @@ function Appointments() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Auto-expand notes textarea
+        if (name === 'notes') {
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
+        }
+
+        // Clear phone error when typing
+        if (name === 'clientPhone') setPhoneError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Phone Validation (E.164 strict)
+        let formattedPhone = formData.clientPhone.replace(/[\s-]/g, '');
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '+385' + formattedPhone.substring(1);
+        } else if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+' + formattedPhone; // ensure it has a plus if it didn't start with 0
+        }
+
+        const phoneRegex = /^\+\d{10,14}$/;
+        if (!phoneRegex.test(formattedPhone)) {
+            setPhoneError('Neispravan format broja. Koristite format +38591234567');
+            return;
+        }
+
         try {
             if (editingAppointment) {
                 // Update implementation can be expanded later
@@ -99,6 +125,8 @@ function Appointments() {
             } else {
                 const payload = {
                     ...formData,
+                    clientPhone: formattedPhone, // Use validated phone
+                    appointment_datetime: `${formData.appointment_date}T${formData.appointment_time}`,
                     service_id: Number(formData.service_id),
                     assigned_to_user_id: Number(formData.assigned_to_user_id)
                 };
@@ -125,12 +153,14 @@ function Appointments() {
         }
 
         setEditingAppointment(null);
+        setPhoneError('');
         setFormData({
             clientName: '',
             clientPhone: '',
-            appointment_datetime: `${date}T10:00`,
+            appointment_date: date,
+            appointment_time: '10:00',
             service_id: services[0]?.id || '',
-            assigned_to_user_id: user?.id || team[0]?.id || '',
+            assigned_to_user_id: user?.id || team[0]?.user_id || '',
             notes: ''
         });
         setShowModal(true);
@@ -142,7 +172,7 @@ function Appointments() {
     };
 
     const getServiceName = (id) => services.find(s => s.id === id)?.name || `Service #${id}`;
-    const getWorkerName = (id) => team.find(w => w.id === id)?.name || `Worker #${id}`;
+    const getWorkerName = (id) => team.find(w => w.user_id === id)?.user_first_name || `Worker #${id}`;
 
     return (
         <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -253,13 +283,20 @@ function Appointments() {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Client Phone *</label>
-                                    <input type="tel" name="clientPhone" required value={formData.clientPhone} onChange={handleChange} placeholder="e.g. +38591234567" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                                    <input type="tel" name="clientPhone" required value={formData.clientPhone} onChange={handleChange} placeholder="+38591234567" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${phoneError ? '#dc3545' : '#ccc'}`, boxSizing: 'border-box' }} />
+                                    {phoneError && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{phoneError}</div>}
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '16px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Date & Time *</label>
-                                <input type="datetime-local" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Date *</label>
+                                    <input type="date" name="appointment_date" required value={formData.appointment_date} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Time *</label>
+                                    <input type="time" name="appointment_time" required value={formData.appointment_time} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
@@ -272,14 +309,14 @@ function Appointments() {
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>With Worker *</label>
                                     <select name="assigned_to_user_id" required value={formData.assigned_to_user_id} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}>
-                                        {team.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        {team.map(w => <option key={w.user_id} value={w.user_id}>{w.user_first_name} {w.user_last_name}</option>)}
                                     </select>
                                 </div>
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Notes</label>
-                                <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box', resize: 'vertical' }} />
+                                <textarea name="notes" value={formData.notes} onChange={handleChange} rows="2" className="resize-none" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box', overflow: 'hidden' }} />
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
