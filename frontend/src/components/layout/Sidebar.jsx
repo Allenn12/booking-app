@@ -97,6 +97,40 @@ function Sidebar() {
                     </div>
                 )}
 
+                {isOwnerOrAdmin && (
+                    <div className="nav-group">
+                        <div
+                            className={`nav-item nav-toggle ${location.pathname.startsWith('/messaging') ? 'active' : ''}`}
+                            onClick={() => navigate('/messaging/automations')}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            💬 Messaging
+                            <span className="toggle-icon open">▼</span>
+                        </div>
+
+                        <div className="sub-menu">
+                            <Link
+                                to="/messaging/automations"
+                                className={`sub-nav-item ${isActive('/messaging/automations') ? 'active' : ''}`}
+                            >
+                                Automatizacije
+                            </Link>
+                            <Link
+                                to="/messaging/templates"
+                                className={`sub-nav-item ${isActive('/messaging/templates') ? 'active' : ''}`}
+                            >
+                                Predlošci
+                            </Link>
+                            <Link
+                                to="/messaging/logs"
+                                className={`sub-nav-item ${isActive('/messaging/logs') ? 'active' : ''}`}
+                            >
+                                Dnevnik i krediti
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 <Link
                     to="/profile"
                     className={`nav-item ${isActive('/profile') ? 'active' : ''}`}

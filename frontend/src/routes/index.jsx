@@ -28,6 +28,11 @@ import Overview from '../pages/app/business/Overview';
 import Services from '../pages/app/business/Services';
 import Team from '../pages/app/business/Team';
 
+// Messaging Pages
+import AutomationsSettings from '../pages/app/messaging/AutomationsSettings';
+import TemplatesEditor from '../pages/app/messaging/TemplatesEditor';
+import LogsAndBilling from '../pages/app/messaging/LogsAndBilling';
+
 // ============================================
 // ROUTE CONFIGURATION
 // ============================================
@@ -93,6 +98,18 @@ export const routeConfig = {
     {
       path: '/business/team',
       component: Team
+    },
+    {
+      path: '/messaging/automations',
+      component: AutomationsSettings
+    },
+    {
+      path: '/messaging/templates',
+      component: TemplatesEditor
+    },
+    {
+      path: '/messaging/logs',
+      component: LogsAndBilling
     }
   ]
 };
