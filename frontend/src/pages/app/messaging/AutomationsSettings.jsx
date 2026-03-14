@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '../../../hooks/useAuth';
+import api from '../../../api/client';
 
 function AutomationsSettings() {
+    const { user } = useAuth();
     const [settings, setSettings] = useState({
         smsEnabled: false,
         sendConfirmation: true,
@@ -14,15 +17,51 @@ function AutomationsSettings() {
     });
 
     const [saved, setSaved] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.activeBusinessId) {
+            setIsLoading(true);
+            api.getBusinessById(user.activeBusinessId)
+                .then(res => {
+                    const data = res.data;
+                    setSettings(prev => ({
+                        ...prev,
+                        smsEnabled: !!data.sms_enabled,
+                        sendConfirmation: !!data.send_confirmation,
+                        sendReminder: !!data.send_reminder,
+                        sendCancellation: !!data.send_cancellation,
+                    }));
+                })
+                .catch(err => {
+                    toast.error('Greška pri učitavanju postavki');
+                    console.error(err);
+                })
+                .finally(() => setIsLoading(false));
+        }
+    }, [user?.activeBusinessId]);
 
     const update = (key, value) => {
         setSettings(prev => ({ ...prev, [key]: value }));
         setSaved(false);
     };
 
-    const handleSave = () => {
-        toast.success('Postavke spremljene!');
-        setSaved(true);
+    const handleSave = async () => {
+        if (!user?.activeBusinessId) return;
+        
+        try {
+            await api.updateBusiness(user.activeBusinessId, {
+                sms_enabled: settings.smsEnabled,
+                send_confirmation: settings.sendConfirmation,
+                send_reminder: settings.sendReminder,
+                send_cancellation: settings.sendCancellation
+            });
+            toast.success('Postavke spremljene!');
+            setSaved(true);
+        } catch (error) {
+            toast.error('Nije uspjelo spremanje postavki');
+            console.error(error);
+        }
     };
 
     const dimmed = !settings.smsEnabled;

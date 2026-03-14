@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '../../../hooks/useAuth';
+import api from '../../../api/client';
 
 const DEFAULT_TEMPLATES = {
     confirmation: 'Poštovani/a {ime}, vaš termin za {usluga} je potvrđen za {vrijeme}. {biznis}',
@@ -57,8 +59,50 @@ function TemplatesEditor() {
         toast.success('Predložak vraćen na zadano');
     };
 
+    const { user } = useAuth();
+
+    useEffect(() => {
+        if (user?.activeBusinessId) {
+            api.getBusinessTemplates(user.activeBusinessId)
+                .then(res => {
+                    if (res.data) {
+                        setTemplates(prev => ({
+                            ...prev,
+                            ...(res.data.confirmation ? { confirmation: res.data.confirmation } : {}),
+                            ...(res.data.reminder ? { reminder: res.data.reminder } : {}),
+                            ...(res.data.cancellation ? { cancellation: res.data.cancellation } : {})
+                        }));
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load templates', err);
+                    toast.error('Nije moguće učitati predloške');
+                });
+                
+            // Fetch business name for sender name preview
+            api.getBusinessById(user.activeBusinessId)
+                .then(res => {
+                     if (res.data && res.data.name) {
+                         setSenderName(res.data.name);
+                     }
+                })
+                .catch(err => console.error(err));
+        }
+    }, [user?.activeBusinessId]);
+
     const handleSave = () => {
-        toast.success('Predlošci spremljeni!');
+        if (!user?.activeBusinessId) return;
+        
+        const loadingToast = toast.loading('Spremanje predložaka...');
+        
+        api.updateBusinessTemplates(user.activeBusinessId, templates)
+            .then(() => {
+                toast.success('Predlošci uspješno spremljeni!', { id: loadingToast });
+            })
+            .catch(err => {
+                console.error(err);
+                toast.error('Greska pri spremanju predložaka', { id: loadingToast });
+            });
     };
 
     // Render preview: replace variables with mock data

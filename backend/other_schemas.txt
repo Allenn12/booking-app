@@ -1,0 +1,42 @@
+CREATE TABLE `credit_transactions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `business_id` int DEFAULT NULL COMMENT 'Which business this transaction belongs to',
+  `amount` int NOT NULL,
+  `transaction_type` enum('purchase','sms_sent','refund','bonus') NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `reference_id` varchar(255) DEFAULT NULL,
+  `balance_after` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `idx_business_transactions` (`business_id`,`created_at`) COMMENT 'Transaction history per business',
+  CONSTRAINT `credit_transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_credit_business` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `appointment_reminders` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `appointment_id` int NOT NULL,
+  `minutes_before` int NOT NULL,
+  `sent` tinyint(1) DEFAULT '0',
+  `sent_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sent` (`sent`),
+  KEY `idx_appointment` (`appointment_id`),
+  CONSTRAINT `appointment_reminders_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `message_templates` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `business_id` int NOT NULL,
+  `type` enum('confirmation','reminder','cancellation') NOT NULL,
+  `content` text NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_business_type` (`business_id`,`type`),
+  CONSTRAINT `message_templates_ibfk_1` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+

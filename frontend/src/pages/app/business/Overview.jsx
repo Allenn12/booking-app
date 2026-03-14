@@ -9,6 +9,7 @@ function Overview() {
     const [initialBusiness, setInitialBusiness] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const defaultHours = [
         { day_of_week: 1, open_time: '09:00', close_time: '17:00', is_closed: 0 }, // Monday
@@ -56,6 +57,8 @@ function Overview() {
                     address: res.data.address || '',
                     city: res.data.city || '',
                     post_code: res.data.post_code || '',
+                    slug: res.data.slug || '',
+                    allow_public_booking: res.data.allow_public_booking ?? 1,
                     business_hours: fetchedHours
                 };
                 setBusiness(businessData);
@@ -113,6 +116,103 @@ function Overview() {
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto', background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
             <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Business Overview</h2>
+
+            {/* ── Public Booking Master Toggle ── */}
+            {business.slug && (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{
+                        background: business.allow_public_booking
+                            ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderRadius: '14px',
+                        padding: '24px',
+                        border: business.allow_public_booking ? '2px solid #86efac' : '2px solid #dee2e6',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        <div>
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', color: '#1a1a2e' }}>
+                                📅 Javno Naručivanje
+                            </h2>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#6c757d' }}>
+                                {business.allow_public_booking
+                                    ? 'Sustav je aktivan. Klijenti se mogu samostalno naručivati putem vašeg linka.'
+                                    : 'Aktivirajte da biste omogućili klijentima online naručivanje.'}
+                            </p>
+                        </div>
+                        <div
+                            onClick={() => handleChange({ target: { name: 'allow_public_booking', value: business.allow_public_booking ? 0 : 1 } })}
+                            style={{
+                                width: '56px', height: '30px',
+                                borderRadius: '30px',
+                                background: business.allow_public_booking ? '#198754' : '#ced4da',
+                                position: 'relative', cursor: 'pointer',
+                                transition: 'background 0.25s ease',
+                                flexShrink: 0
+                            }}
+                        >
+                            <div style={{
+                                width: '22px', height: '22px',
+                                borderRadius: '50%', background: 'white',
+                                position: 'absolute',
+                                top: '4px',
+                                left: business.allow_public_booking ? '30px' : '4px',
+                                transition: 'left 0.25s ease',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                            }} />
+                        </div>
+                    </div>
+
+                    {/* Dependent section - dimmed when master is off */}
+                    <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: '#f8f9fa',
+                        borderRadius: '12px',
+                        border: '1px solid #e9ecef',
+                        opacity: business.allow_public_booking ? 1 : 0.4,
+                        pointerEvents: business.allow_public_booking ? 'auto' : 'none',
+                        transition: 'opacity 0.3s ease'
+                    }}>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#555', marginBottom: '8px' }}>
+                            Vaš link za naručivanje:
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <input
+                                readOnly
+                                value={`${window.location.origin}/book/${business.slug}`}
+                                onClick={(e) => e.target.select()}
+                                style={{ flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid #ced4da', background: 'white', fontSize: '14px', color: '#333', fontFamily: 'monospace', outline: 'none' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/book/${business.slug}`);
+                                    setCopied(true);
+                                    toast.success('Link kopiran!');
+                                    setTimeout(() => setCopied(false), 2000);
+                                }}
+                                style={{
+                                    padding: '10px 18px',
+                                    background: copied ? '#198754' : '#0d6efd',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '14px',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'background 0.2s'
+                                }}
+                            >
+                                {copied ? '✓ Kopirano' : '📋 Kopiraj Link'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>

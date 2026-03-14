@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import session from 'express-session';
 import MySQLStore from 'express-mysql-session';
 import cors from 'cors';
+import './workers/reminderWorker.js';
 
 dotenv.config();
 const app = express();
@@ -69,6 +70,8 @@ app.use((error, req, res, next) => {
   // Default
   console.error('🔴 UNKNOWN ERROR:', error);
   if (error.stack) console.error(error.stack);
+  // DEBUG: Write to file
+  import('fs').then(fs => fs.appendFileSync('./debug_errors.log', `\n[${new Date().toISOString()}] ${error.message}\n${error.stack}\n`));
   return res.status(500).json({
     success: false,
     error: 'Desila se greška u sustavu',

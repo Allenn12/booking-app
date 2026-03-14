@@ -64,6 +64,15 @@ export const api = {
   getMyBusinesses: () => apiRequest('/business/my'),
   
   getBusinessById: (id) => apiRequest(`/business/${id}`),
+
+  getBusinessBilling: (id) => apiRequest(`/business/${id}/billing`),
+
+  getBusinessTemplates: (id) => apiRequest(`/business/${id}/templates`),
+
+  updateBusinessTemplates: (id, templatesData) => apiRequest(`/business/${id}/templates`, {
+    method: 'POST',
+    body: JSON.stringify(templatesData)
+  }),
   
   createBusiness: (businessData) => apiRequest('/business', {
     method: 'POST',
@@ -134,6 +143,8 @@ export const api = {
   // Appointments
   getAppointments: (date) => apiRequest(`/appointments${date ? `?date=${date}` : ''}`),
   
+  getAppointmentsRange: (dateFrom, dateTo) => apiRequest(`/appointments?date_from=${dateFrom}&date_to=${dateTo}`),
+  
   getAppointmentById: (id) => apiRequest(`/appointments/${id}`),
   
   createAppointment: (data) => apiRequest('/appointments', {
@@ -148,6 +159,16 @@ export const api = {
   
   deleteAppointment: (id) => apiRequest(`/appointments/${id}`, {
     method: 'DELETE'
+  }),
+
+  // Public Booking
+  getPublicBusinessInfo: (slug) => apiRequest(`/public/book/${slug}`),
+
+  getPublicAvailability: (slug, date, serviceId) => apiRequest(`/public/book/${slug}/availability?date=${date}&service_id=${serviceId}`),
+
+  createPublicBooking: (slug, bookingData) => apiRequest(`/public/book/${slug}`, {
+    method: 'POST',
+    body: JSON.stringify(bookingData)
   }),
 };
 

@@ -1,6 +1,21 @@
 import pool from "../config/database.js";
 import { ERRORS } from "../utils/errors.js";
 import crypto from "crypto";
+
+/**
+ * Generate a URL-friendly slug from a business name.
+ * Appends the business ID for guaranteed uniqueness.
+ */
+function generateSlug(name, id) {
+    const base = name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    return `${base}-${id}`;
+}
 import { hashVerificationToken } from "../script/hashVerificationToken.js";
 
 const Business = {
@@ -22,8 +37,8 @@ const Business = {
             const subscriptionStatus = "trial";
             const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-            const sql = `INSERT INTO business(name, business_type_id, owner_user_id, phone, email, address, city, post_code, country_id, sms_credits, subscription_status, trial_ends_at)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const sql = `INSERT INTO business(name, business_type_id, owner_user_id, phone, email, address, city, post_code, country_id, sms_credits, subscription_status, trial_ends_at, slug, allow_public_booking)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             const params = [
                 data.name.trim(),
                 data.business_type_id,
@@ -37,11 +52,19 @@ const Business = {
                 smsCredits,
                 subscriptionStatus,
                 trialEndsAt,
+                'temp-slug', // placeholder, updated immediately after insert
+                0,
             ];
 
             const [result] = await pool.query(sql, params);
-            console.log("Business kreiran, ID:", result.insertId);
-            return result.insertId;
+            const businessId = result.insertId;
+
+            // Generate real slug with ID for uniqueness and update
+            const slug = generateSlug(data.name, businessId);
+            await pool.query('UPDATE business SET slug = ? WHERE id = ?', [slug, businessId]);
+
+            console.log("Business kreiran, ID:", businessId, "Slug:", slug);
+            return businessId;
         } catch (error) {
             console.error("❌ Business.create error:", error);
 
@@ -175,6 +198,26 @@ const Business = {
                 updates.push('country_id = ?');
                 params.push(data.country_id);
             }
+            if (data.allow_public_booking !== undefined) {
+                updates.push('allow_public_booking = ?');
+                params.push(data.allow_public_booking ? 1 : 0);
+            }
+            if (data.sms_enabled !== undefined) {
+                updates.push('sms_enabled = ?');
+                params.push(data.sms_enabled ? 1 : 0);
+            }
+            if (data.send_confirmation !== undefined) {
+                updates.push('send_confirmation = ?');
+                params.push(data.send_confirmation ? 1 : 0);
+            }
+            if (data.send_reminder !== undefined) {
+                updates.push('send_reminder = ?');
+                params.push(data.send_reminder ? 1 : 0);
+            }
+            if (data.send_cancellation !== undefined) {
+                updates.push('send_cancellation = ?');
+                params.push(data.send_cancellation ? 1 : 0);
+            }
 
             if (updates.length === 0) throw ERRORS.VALIDATION('Nema ništa za ažuriranje.');
             updates.push('updated_at = NOW()');
@@ -307,6 +350,33 @@ const Business = {
             console.error('❌ Business.findByName error:', error);
             if (error.statusCode) throw error;
             throw ERRORS.DATABASE(`Failed to find business by name: ${error.message}`);
+        }
+    },
+
+    findBySlug: async (slug) => {
+        try {
+            if (!slug || typeof slug !== 'string') {
+                throw ERRORS.VALIDATION('Slug is required');
+            }
+            const sql = 'SELECT * FROM business WHERE slug = ? AND is_active = 1 LIMIT 1';
+            const [rows] = await pool.query(sql, [slug.toLowerCase()]);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('❌ Business.findBySlug error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to find business by slug: ${error.message}`);
+        }
+    },
+
+    togglePublicBooking: async (businessId, enabled) => {
+        try {
+            const sql = 'UPDATE business SET allow_public_booking = ?, updated_at = NOW() WHERE id = ? AND is_active = 1';
+            const [result] = await pool.query(sql, [enabled ? 1 : 0, businessId]);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('❌ Business.togglePublicBooking error:', error);
+            if (error.statusCode) throw error;
+            throw ERRORS.DATABASE(`Failed to toggle public booking: ${error.message}`);
         }
     },
 };

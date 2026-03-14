@@ -1,0 +1,58 @@
+
+=== business ===
+id (int) - DEFAULT: null
+name (varchar(100)) - DEFAULT: null
+slug (varchar(100)) - DEFAULT: null
+allow_public_booking (tinyint(1)) - DEFAULT: 0
+business_type_id (int) - DEFAULT: null
+owner_user_id (int) - DEFAULT: null
+phone (varchar(20)) - DEFAULT: null
+email (varchar(100)) - DEFAULT: null
+address (varchar(255)) - DEFAULT: null
+city (varchar(100)) - DEFAULT: null
+post_code (varchar(20)) - DEFAULT: null
+country_id (int) - DEFAULT: null
+timezone (varchar(50)) - DEFAULT: Europe/Zagreb
+sms_credits (int) - DEFAULT: 0
+subscription_status (enum('trial','active','suspended','cancelled')) - DEFAULT: trial
+trial_ends_at (datetime) - DEFAULT: null
+booking_buffer_minutes (int) - DEFAULT: 0
+is_active (tinyint(1)) - DEFAULT: 1
+created_at (timestamp) - DEFAULT: CURRENT_TIMESTAMP
+updated_at (timestamp) - DEFAULT: CURRENT_TIMESTAMP
+
+=== notification_logs ===
+id (int) - DEFAULT: null
+business_id (int) - DEFAULT: null
+appointment_id (int) - DEFAULT: null
+user_id (int) - DEFAULT: null
+notification_type (enum('created','reminder','changed','cancelled')) - DEFAULT: null
+channel (enum('sms')) - DEFAULT: null
+recipient_phone (varchar(20)) - DEFAULT: null
+message_text (text) - DEFAULT: null
+status (enum('pending','sent','failed')) - DEFAULT: pending
+sent_at (datetime) - DEFAULT: null
+failed_reason (text) - DEFAULT: null
+twilio_sid (varchar(255)) - DEFAULT: null
+created_at (timestamp) - DEFAULT: CURRENT_TIMESTAMP
+
+=== credit_transactions ===
+id (int) - DEFAULT: null
+user_id (int) - DEFAULT: null
+business_id (int) - DEFAULT: null
+amount (int) - DEFAULT: null
+transaction_type (enum('purchase','sms_sent','refund','bonus')) - DEFAULT: null
+description (varchar(255)) - DEFAULT: null
+reference_id (varchar(255)) - DEFAULT: null
+balance_after (int) - DEFAULT: null
+created_at (timestamp) - DEFAULT: CURRENT_TIMESTAMP
+
+=== appointment_reminders ===
+id (int) - DEFAULT: null
+appointment_id (int) - DEFAULT: null
+minutes_before (int) - DEFAULT: null
+sent (tinyint(1)) - DEFAULT: 0
+sent_at (datetime) - DEFAULT: null
+created_at (timestamp) - DEFAULT: CURRENT_TIMESTAMP
+
+=== message_templates DOES NOT EXIST ===

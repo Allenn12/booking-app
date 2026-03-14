@@ -14,6 +14,7 @@ import LoginPage from '../pages/public/LoginPage';
 import RegisterPage from '../pages/public/RegisterPage';
 import VerifyEmailPage from '../pages/public/VerifyEmailPage';
 import EmailVerifiedPage from '../pages/public/EmailVerifiedPage';
+import PublicBookingPage from '../pages/public/PublicBookingPage';
 
 // Authenticated pages
 import Dashboard from '../pages/app/Dashboard';
@@ -57,14 +58,15 @@ export const routeConfig = {
   public: [
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
+    //{ path: '/book/:slug', component: PublicBookingPage },
   ],
 
   neutral: [
     { path: '/', component: HomePage },
     { path: '/verify-email', component: VerifyEmailPage },
     { path: '/onboarding', component: OnboardingPage },
-  ],
 
+  ],
   // Protected routes (require authentication)
   protected: [
     {
@@ -136,7 +138,12 @@ export const routeConfig = {
  */
 export function AppRoutes() {
   return (
+    
     <Routes>
+      <Route path="/book/:slug" element={<PublicBookingPage />} />
+      {/* ================== PUBLIC BOOKING (standalone, no guards) ================== */}
+      {/* <Route path="/book/:slug" element={<PublicBookingPage />} /> */}
+
       {/* ================== PUBLIC ROUTES ================== */}
       {routeConfig.public.map(({ path, component: Component }) => (
         <Route

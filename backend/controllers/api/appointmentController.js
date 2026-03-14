@@ -6,14 +6,15 @@ import BusinessHour from '../../models/BusinessHour.js';
 import UserBusiness from '../../models/UserBusiness.js';
 import { normalizePhone } from '../../utils/phoneFormatter.js';
 import fs from 'fs';
+import NotificationService from '../../services/NotificationService.js';
 
 export const AppointmentController = {
     getAll: async (req, res, next) => {
         try {
             const businessId = req.session.activeBusinessId;
-            const date = req.query.date;
+            const { date, date_from, date_to } = req.query;
 
-            const appointments = await Appointment.findAll(businessId, date);
+            const appointments = await Appointment.findAll(businessId, date, date_from, date_to);
             res.status(200).json({ success: true, data: appointments });
         } catch(error) { 
             next(error); 
@@ -129,6 +130,23 @@ export const AppointmentController = {
             // Successfully made it past all checks and inserts
             await connection.commit();
 
+            // 6. Trigger Notifications (Non-blocking)
+            try {
+                const fullBusiness = await Business.getById(businessId);
+                const [serv] = await pool.query('SELECT name FROM services WHERE id=?', [service_id]);
+                const [emp] = await pool.query('SELECT first_name FROM user WHERE id=?', [assigned_to_user_id]);
+                
+                await NotificationService.handleAppointmentCreated(
+                    { id: newAptId, start_time: appointment_datetime },
+                    { id: finalClientId, first_name: clientName, phone: safePhone },
+                    fullBusiness,
+                    { name: serv[0]?.name },
+                    { first_name: emp[0]?.first_name }
+                );
+            } catch (err) {
+                console.error('Notification Service Error on Create:', err);
+            }
+
             res.status(201).json({
                 success: true,
                 message: 'Appointment created successfully',
@@ -150,8 +168,32 @@ export const AppointmentController = {
             const { id } = req.params;
             const payload = req.body;
             // Simplistic update for now (primarily used for status)
+            const oldAppt = await Appointment.findById(id);
             const success = await Appointment.update(id, payload);
             if (!success) throw ERRORS.NOT_FOUND('Appointment not found');
+
+            // Trigger Cancellation Notification if status changed to cancelled
+            if (payload.status === 'cancelled' && oldAppt && oldAppt.status !== 'cancelled') {
+                try {
+                    const fullBusiness = await Business.getById(oldAppt.business_id);
+                    const [serv] = await pool.query('SELECT name FROM services WHERE id=?', [oldAppt.service_id]);
+                    const [emp] = await pool.query('SELECT first_name FROM user WHERE id=?', [oldAppt.assigned_to_user_id]);
+                    const [cli] = await pool.query('SELECT first_name, phone FROM clients WHERE id=?', [oldAppt.client_id]);
+                    
+                    if (cli.length > 0) {
+                        await NotificationService.handleAppointmentCancelled(
+                            oldAppt,
+                            { id: oldAppt.client_id, first_name: cli[0].first_name, phone: cli[0].phone },
+                            fullBusiness,
+                            { name: serv[0]?.name },
+                            { first_name: emp[0]?.first_name }
+                        );
+                    }
+                } catch (err) {
+                    console.error('Notification Service Error on Cancel:', err);
+                }
+            }
+
             res.status(200).json({ success: true, message: 'Appointment updated' });
         } catch(error) {
             next(error);

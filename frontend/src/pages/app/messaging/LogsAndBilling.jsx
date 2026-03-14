@@ -1,24 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { api } from '../../../api/client';
+import { useAuth } from '../../../hooks/useAuth';
 
-// ─── Mock Data ──────────────────────────────────────────────
-
-const MOCK_LOGS = [
-    { id: 1, date: '2026-03-11 09:15', client: 'Ana Marić', phone: '+385911234567', type: 'confirmation', status: 'delivered', credits: 1, message: 'Poštovani/a Ana Marić, vaš termin za Šišanje je potvrđen za 10:00, 12.03.2026. Salon Lucija' },
-    { id: 2, date: '2026-03-11 08:00', client: 'Marko Horvat', phone: '+385921234567', type: 'reminder', status: 'sent', credits: 1, message: 'Podsjetnik: sutra u 09:30 imate zakazan termin za Bojanje kose kod Ivana. Salon Lucija' },
-    { id: 3, date: '2026-03-10 14:30', client: 'Petra Novak', phone: '+385981234567', type: 'cancellation', status: 'delivered', credits: 1, message: 'Obavijest: vaš termin za Manikura (15:00, 11.03.2026.) je otkazan. Javite nam se za novi termin. Salon Lucija' },
-    { id: 4, date: '2026-03-10 10:00', client: 'Ivan Babić', phone: '+385951234567', type: 'confirmation', status: 'failed', credits: 0, message: 'Poštovani/a Ivan Babić, vaš termin...', error: 'Unreachable: Phone number is not a mobile number' },
-    { id: 5, date: '2026-03-09 17:45', client: 'Lucija Katić', phone: '+385991234567', type: 'reminder', status: 'delivered', credits: 1, message: 'Podsjetnik: sutra u 11:00 imate zakazan termin za Pedikura kod Marko. Salon Lucija' },
-    { id: 6, date: '2026-03-09 12:00', client: 'Tomislav Jurić', phone: '+385911234568', type: 'confirmation', status: 'cancelled', credits: 0, message: 'Poštovani/a Tomislav Jurić, vaš termin za Šišanje je potvrđen za 14:00, 10.03.2026. Salon Lucija' },
-    { id: 7, date: '2026-03-08 08:00', client: 'Ana Marić', phone: '+385911234567', type: 'reminder', status: 'delivered', credits: 1, message: 'Podsjetnik: sutra u 10:00 imate zakazan termin za Šišanje kod Ivana. Salon Lucija' },
-];
-
-const MOCK_TRANSACTIONS = [
-    { id: 1, date: '2026-03-01 10:00', type: 'purchase', amount: 100, balance: 100, description: 'Kupnja 100 kredita' },
-    { id: 2, date: '2026-03-05 09:15', type: 'usage', amount: -1, balance: 99, description: 'SMS podsjetnik — Ana Marić' },
-    { id: 3, date: '2026-03-05 14:30', type: 'usage', amount: -1, balance: 98, description: 'SMS potvrda — Marko Horvat' },
-    { id: 4, date: '2026-03-10 10:00', type: 'refund', amount: 1, balance: 99, description: 'Povrat — neuspjeli SMS Ivan Babić' },
-];
+// ─── Config Data ──────────────────────────────────────────────
 
 const STATUS_CONFIG = {
     pending: { label: 'Na čekanju', color: '#f59e0b', bg: '#fffbeb', icon: '🟡' },
@@ -37,21 +22,55 @@ const TYPE_LABELS = {
 // ─── Main Component ─────────────────────────────────────────
 
 function LogsAndBilling() {
+    const { user } = useAuth();
     const [dateFilter, setDateFilter] = useState('7');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [expandedRow, setExpandedRow] = useState(null);
     const [showTransactions, setShowTransactions] = useState(false);
+    
+    // API State
+    const [logs, setLogs] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [creditBalance, setCreditBalance] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Mock values
-    const creditBalance = 47;
-    const monthlyUsage = 23;
+    useEffect(() => {
+        if (user?.activeBusinessId) {
+            setIsLoading(true);
+            api.getBusinessBilling(user.activeBusinessId)
+                .then(res => {
+                    if (res.success) {
+                        setLogs(res.data.logs || []);
+                        setTransactions(res.data.transactions || []);
+                        setCreditBalance(res.data.creditBalance || 0);
+                    }
+                })
+                .catch(err => {
+                    toast.error('Greška pri učitavanju dnevnika i kredita');
+                    console.error(err);
+                })
+                .finally(() => setIsLoading(false));
+        }
+    }, [user?.activeBusinessId]);
+
+    // Mock calculations (monthly usage could also be calculated from real logs)
+    const monthlyUsage = logs.filter(l => l.status === 'sent' || l.status === 'delivered').length;
     const isActive = creditBalance > 0;
 
     // Filter logs
-    const filteredLogs = MOCK_LOGS.filter(log => {
+    const filteredLogs = logs.filter(log => {
         if (typeFilter !== 'all' && log.type !== typeFilter) return false;
         if (statusFilter !== 'all' && log.status !== statusFilter) return false;
+        
+        // Handle date filtering simply by days logic (for production, parse dates properly)
+        if (dateFilter !== 'all') {
+            const logDate = new Date(log.date);
+            const now = new Date();
+            const diffDays = Math.ceil(Math.abs(now - logDate) / (1000 * 60 * 60 * 24));
+            if (diffDays > parseInt(dateFilter, 10)) return false;
+        }
+
         return true;
     });
 
@@ -304,7 +323,11 @@ function LogsAndBilling() {
                             <span style={{ textAlign: 'right' }}>Stanje nakon</span>
                         </div>
 
-                        {MOCK_TRANSACTIONS.map(tx => {
+                        {transactions.length === 0 ? (
+                             <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
+                                 Nema transakcija.
+                             </div>
+                        ) : transactions.map(tx => {
                             const color = tx.type === 'purchase' ? '#198754'
                                         : tx.type === 'refund' ? '#0d6efd'
                                         : '#dc3545';

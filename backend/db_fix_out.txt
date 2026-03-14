@@ -1,0 +1,50 @@
+--- BEFORE ---
+CREATE TABLE `notification_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `business_id` int DEFAULT NULL COMMENT 'Which business sent this SMS',
+  `appointment_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `notification_type` varchar(50) NOT NULL,
+  `channel` enum('sms') NOT NULL,
+  `recipient_phone` varchar(20) NOT NULL,
+  `message_text` text NOT NULL,
+  `status` enum('pending','sent','failed') DEFAULT 'pending',
+  `sent_at` datetime DEFAULT NULL,
+  `failed_reason` text,
+  `twilio_sid` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `user_id` (`user_id`),
+  KEY `idx_business_date` (`business_id`,`created_at`) COMMENT 'SMS logs per business per month',
+  CONSTRAINT `fk_notification_business` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_logs_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+--- ALTERING TABLE ---
+Alter table successful.
+
+--- AFTER ---
+CREATE TABLE `notification_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `business_id` int DEFAULT NULL COMMENT 'Which business sent this SMS',
+  `appointment_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `notification_type` varchar(50) NOT NULL,
+  `channel` enum('sms') NOT NULL,
+  `recipient_phone` varchar(20) NOT NULL,
+  `message_text` text NOT NULL,
+  `status` enum('pending','sent','failed') DEFAULT 'pending',
+  `sent_at` datetime DEFAULT NULL,
+  `failed_reason` text,
+  `twilio_sid` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `user_id` (`user_id`),
+  KEY `idx_business_date` (`business_id`,`created_at`) COMMENT 'SMS logs per business per month',
+  CONSTRAINT `fk_notification_business` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_logs_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci

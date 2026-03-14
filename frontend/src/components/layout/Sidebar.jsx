@@ -63,6 +63,15 @@ function Sidebar() {
                     </Link>
                 )}
 
+                {user?.activeBusinessId && (
+                    <Link
+                        to="/calendar"
+                        className={`nav-item ${isActive('/calendar') ? 'active' : ''}`}
+                    >
+                        📅 Kalendar
+                    </Link>
+                )}
+
                 {isOwnerOrAdmin && (
                     <div className="nav-group">
                         <div

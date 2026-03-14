@@ -25,5 +25,8 @@ router.get('/:id/services', BusinessController.getServices); // GET /api/v1/busi
 router.post('/:id/services', ServiceController.create);      // POST /api/v1/business/:id/services
 router.put('/:id/services/:serviceId', ServiceController.update); // PUT /api/v1/business/:id/services/:serviceId
 router.delete('/:id/services/:serviceId', ServiceController.delete); // DELETE /api/v1/business/:id/services/:serviceId
+router.get('/:id/billing', BusinessController.getBilling); // GET /api/v1/business/:id/billing
+router.get('/:id/templates', BusinessController.getTemplates); // GET /api/v1/business/:id/templates
+router.post('/:id/templates', BusinessController.updateTemplates); // POST /api/v1/business/:id/templates
 
 export default router;

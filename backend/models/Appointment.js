@@ -8,11 +8,14 @@ const Appointment = {
         return rows[0];
     },
 
-    findAll: async (businessId, date) => {
+    findAll: async (businessId, date, dateFrom, dateTo) => {
         let sql = 'SELECT * FROM appointment WHERE business_id = ? AND deleted_at IS NULL';
         const params = [businessId];
 
-        if (date) {
+        if (dateFrom && dateTo) {
+            sql += ' AND DATE(appointment_datetime) >= ? AND DATE(appointment_datetime) <= ?';
+            params.push(dateFrom, dateTo);
+        } else if (date) {
             sql += ' AND DATE(appointment_datetime) = ?';
             params.push(date);
         }

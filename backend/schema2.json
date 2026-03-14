@@ -1,0 +1,1 @@
+{"services":["id","business_id","name","description","duration_minutes","price","is_active","created_at","updated_at"],"user_business":["id","user_id","business_id","role","can_manage_services","can_manage_clients","can_create_appointments","can_view_reports","invited_at","joined_at"]}
