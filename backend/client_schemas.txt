@@ -1,0 +1,48 @@
+=== clients ===
+CREATE TABLE `clients` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `business_id` int NOT NULL COMMENT '⭐ ISOLATION KEY - which business owns this client',
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Client full name',
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Phone number (E.164 format: +385912345678) - CRITICAL for SMS',
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Optional email',
+  `notes` text COLLATE utf8mb4_unicode_ci COMMENT 'Internal notes (allergies, preferences, etc.)',
+  `total_appointments` int DEFAULT '0' COMMENT 'Total appointments booked',
+  `last_appointment_at` datetime DEFAULT NULL COMMENT 'Last appointment date',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_business_phone` (`business_id`,`phone`) COMMENT 'Lookup client by phone within business',
+  KEY `idx_business_name` (`business_id`,`name`) COMMENT 'Search clients by name',
+  KEY `idx_business_stats` (`business_id`,`total_appointments`) COMMENT 'Find VIP clients',
+  CONSTRAINT `clients_ibfk_1` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Clients (customers) who book appointments - isolated per business'
+
+=== appointment ===
+CREATE TABLE `appointment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `business_id` int DEFAULT NULL COMMENT '⭐ CRITICAL: Which business owns this appointment',
+  `client_id` int DEFAULT NULL COMMENT 'References clients.id (instead of duplicate name/phone)',
+  `service_id` int DEFAULT NULL COMMENT 'References services.id (which service was booked)',
+  `assigned_to_user_id` int DEFAULT NULL COMMENT 'Which employee is doing this appointment',
+  `name` varchar(100) DEFAULT NULL,
+  `phone` varchar(32) DEFAULT NULL,
+  `appointment_datetime` datetime NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `status` enum('scheduled','completed','cancelled','no_show') DEFAULT 'scheduled',
+  `notes` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `fk_appointment_service` (`service_id`),
+  KEY `idx_business_date` (`business_id`,`appointment_datetime`) COMMENT 'Get appointments for business on specific date',
+  KEY `idx_assigned_user` (`assigned_to_user_id`) COMMENT 'Get appointments for specific employee',
+  KEY `idx_client_appointments` (`client_id`) COMMENT 'Get appointment history for client',
+  CONSTRAINT `fk_appointment_assigned_user` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_appointment_business` FOREIGN KEY (`business_id`) REFERENCES `business` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_appointment_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_appointment_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+

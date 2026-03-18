@@ -72,6 +72,15 @@ function Sidebar() {
                     </Link>
                 )}
 
+                {user?.activeBusinessId && (
+                    <Link
+                        to="/clients"
+                        className={`nav-item ${isActive('/clients') ? 'active' : ''}`}
+                    >
+                        👥 Klijenti
+                    </Link>
+                )}
+
                 {isOwnerOrAdmin && (
                     <div className="nav-group">
                         <div
@@ -135,6 +144,40 @@ function Sidebar() {
                                 className={`sub-nav-item ${isActive('/messaging/logs') ? 'active' : ''}`}
                             >
                                 Dnevnik i krediti
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {isOwnerOrAdmin && (
+                    <div className="nav-group">
+                        <div
+                            className={`nav-item nav-toggle ${location.pathname.startsWith('/marketing') ? 'active' : ''}`}
+                            onClick={() => navigate('/marketing/campaigns')}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            📣 Marketing
+                            <span className="toggle-icon open">▼</span>
+                        </div>
+
+                        <div className="sub-menu">
+                            <Link
+                                to="/marketing/campaigns"
+                                className={`sub-nav-item ${isActive('/marketing/campaigns') ? 'active' : ''}`}
+                            >
+                                Kampanje
+                            </Link>
+                            <Link
+                                to="/marketing/segments"
+                                className={`sub-nav-item ${isActive('/marketing/segments') ? 'active' : ''}`}
+                            >
+                                Segmenti
+                            </Link>
+                            <Link
+                                to="/marketing/automations"
+                                className={`sub-nav-item ${isActive('/marketing/automations') ? 'active' : ''}`}
+                            >
+                                Automatizacije
                             </Link>
                         </div>
                     </div>

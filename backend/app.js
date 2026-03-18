@@ -11,7 +11,8 @@ import session from 'express-session';
 import MySQLStore from 'express-mysql-session';
 import cors from 'cors';
 import './workers/reminderWorker.js';
-
+import './workers/campaignWorker.js';
+import './workers/automationWorker.js';
 dotenv.config();
 const app = express();
 

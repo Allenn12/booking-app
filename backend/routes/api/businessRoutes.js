@@ -5,7 +5,9 @@ import TeamController from '../../controllers/api/teamController.js';
 import ServiceController from '../../controllers/api/serviceController.js';
 import AppointmentController from '../../controllers/api/appointmentController.js';
 import DashboardController from '../../controllers/api/dashboardController.js';
-
+import ClientController from '../../controllers/api/clientController.js';
+import MarketingController from '../../controllers/api/marketingController.js';
+import { validateBusinessOwner } from '../../middleware/businessMiddleware.js';
 const router = express.Router();
 
 // All routes require authentication
@@ -28,5 +30,41 @@ router.delete('/:id/services/:serviceId', ServiceController.delete); // DELETE /
 router.get('/:id/billing', BusinessController.getBilling); // GET /api/v1/business/:id/billing
 router.get('/:id/templates', BusinessController.getTemplates); // GET /api/v1/business/:id/templates
 router.post('/:id/templates', BusinessController.updateTemplates); // POST /api/v1/business/:id/templates
+
+// Client routes
+router.get('/:id/clients/search', ClientController.searchClients);    // GET /api/v1/business/:id/clients/search?q=...
+router.get('/:id/clients', ClientController.getClients);              // GET /api/v1/business/:id/clients
+router.get('/:id/clients/:clientId', ClientController.getClientDetail); // GET /api/v1/business/:id/clients/:clientId
+router.patch('/:id/clients/:clientId/notes', ClientController.updateClientNotes); // PATCH notes
+
+// Marketing routes (Require Owner/Admin)
+router.use('/:id/marketing', validateBusinessOwner);
+
+router.get('/:id/marketing/segments', MarketingController.getSegments);
+router.post('/:id/marketing/segments', MarketingController.createSegment);
+router.get('/:id/marketing/segments/:segmentId', MarketingController.getSegmentById);
+router.put('/:id/marketing/segments/:segmentId', MarketingController.updateSegment);
+router.delete('/:id/marketing/segments/:segmentId', MarketingController.deleteSegment);
+router.get('/:id/marketing/segments/:segmentId/preview', MarketingController.previewSegment);
+
+router.get('/:id/marketing/campaigns', MarketingController.getCampaigns);
+router.post('/:id/marketing/campaigns', MarketingController.createCampaign);
+router.get('/:id/marketing/campaigns/:campaignId', MarketingController.getCampaignById);
+router.put('/:id/marketing/campaigns/:campaignId', MarketingController.updateCampaign);
+router.delete('/:id/marketing/campaigns/:campaignId', MarketingController.deleteCampaign);
+router.get('/:id/marketing/campaigns/:campaignId/preview', MarketingController.previewCampaign);
+router.post('/:id/marketing/campaigns/:campaignId/send', MarketingController.sendCampaignNow);
+router.post('/:id/marketing/campaigns/:campaignId/schedule', MarketingController.scheduleCampaign);
+router.post('/:id/marketing/campaigns/:campaignId/cancel', MarketingController.cancelCampaign);
+router.get('/:id/marketing/campaigns/:campaignId/recipients', MarketingController.getRecipients);
+
+router.get('/:id/marketing/automations', MarketingController.getAutomations);
+router.post('/:id/marketing/automations', MarketingController.createAutomation);
+router.get('/:id/marketing/automations/:automationId', MarketingController.getAutomationById);
+router.put('/:id/marketing/automations/:automationId', MarketingController.updateAutomation);
+router.delete('/:id/marketing/automations/:automationId', MarketingController.deleteAutomation);
+router.post('/:id/marketing/automations/:automationId/enable', MarketingController.enableAutomation);
+router.post('/:id/marketing/automations/:automationId/disable', MarketingController.disableAutomation);
+router.get('/:id/marketing/automations/:automationId/stats', MarketingController.getAutomationStats);
 
 export default router;

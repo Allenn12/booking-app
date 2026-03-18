@@ -69,10 +69,47 @@ export const NotificationService = {
      return true;
   },
 
-  async logNotification(businessId, appointmentId, userId, type, phone, message, status, failedReason) {
-      const sql = `INSERT INTO notification_logs (business_id, appointment_id, user_id, notification_type, channel, recipient_phone, message_text, status, sent_at, failed_reason) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`;
-      await pool.query(sql, [
+  async sendRaw(businessId, clientId, phone, renderedMessage, source = 'campaign', sourceId = null) {
+     const business = await Business.getById(businessId);
+     if (!business) return { success: false, reason: 'Business not found' };
+
+     if (!business.sms_enabled) {
+         console.log(`[NotificationService] Messaging disabled for business ${businessId}.`);
+         return { success: false, reason: 'SMS disabled' };
+     }
+     
+     if (!phone) {
+         return { success: false, reason: 'Missing phone' };
+     }
+
+     const cost = 1;
+     if (business.sms_credits < cost) {
+       await this.logNotification(businessId, null, business.owner_user_id, 'campaign', phone, renderedMessage, 'failed', 'Insufficient credits', source, sourceId);
+       return { success: false, reason: 'Insufficient credits' };
+     }
+
+     const successDeduct = await Business.deductCredits(businessId, cost);
+     if (!successDeduct) return { success: false, reason: 'Failed to deduct credits' };
+
+     await pool.query(
+        'INSERT INTO credit_transactions (user_id, business_id, amount, transaction_type, description, balance_after) VALUES (?, ?, ?, ?, ?, ?)',
+        [business.owner_user_id, businessId, -cost, 'sms_sent', `SMS sent via ${source}`, business.sms_credits - cost]
+     );
+
+     console.log(`\n\n[FAKE SMS PROVIDER - RAW] -------------------------`);
+     console.log(`To: ${phone}`);
+     console.log(`Source: ${source} (ID: ${sourceId})`);
+     console.log(`Content:\n${renderedMessage}`);
+     console.log(`----------------------------------------------\n\n`);
+
+     const logId = await this.logNotification(businessId, null, business.owner_user_id, 'campaign', phone, renderedMessage, 'sent', null, source, sourceId);
+     return { success: true, logId };
+  },
+
+  async logNotification(businessId, appointmentId, userId, type, phone, message, status, failedReason, source = 'transactional', sourceId = null) {
+      const sql = `INSERT INTO notification_logs (business_id, appointment_id, user_id, notification_type, channel, recipient_phone, message_text, status, sent_at, failed_reason, source, source_id) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`;
+      const [result] = await pool.query(sql, [
           businessId, 
           appointmentId || null, 
           userId || null, 
@@ -81,8 +118,11 @@ export const NotificationService = {
           phone, 
           message, 
           status, 
-          failedReason || null
+          failedReason || null,
+          source,
+          sourceId || null
       ]);
+      return result.insertId;
   },
 
   async scheduleReminder(businessId, appointmentId, startTime) {

@@ -1,0 +1,236 @@
+import React, { useState, useEffect } from 'react';
+import { api } from '../../../api/client';
+import { useAuth } from '../../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import SegmentSelector from '../../../components/marketing/SegmentSelector';
+import './Marketing.css';
+
+/**
+ * CampaignWizard Component - Refactored for Salon Owners
+ */
+const CampaignWizard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    segment_id: null,
+    template_id: '',
+    inline_message: '',
+    scheduledAt: ''
+  });
+
+  const [templates, setTemplates] = useState([]);
+  const [previewCount, setPreviewCount] = useState(null);
+  const [loadingCount, setLoadingCount] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user?.activeBusinessId) {
+      loadTemplates();
+    }
+  }, [user?.activeBusinessId]);
+
+  useEffect(() => {
+    if (!user?.activeBusinessId) return;
+    
+    const fetchCount = async () => {
+      setLoadingCount(true);
+      try {
+        if (formData.segment_id === null) {
+           const res = await api.getBusinessClients(user.activeBusinessId, { limit: 1 });
+           setPreviewCount(res.meta?.total || res.pagination?.total || 0);
+        } else {
+           const res = await api.previewSegment(user.activeBusinessId, formData.segment_id);
+           setPreviewCount(res.count);
+        }
+      } catch {
+        setPreviewCount('—');
+      } finally {
+        setLoadingCount(false);
+      }
+    };
+
+    fetchCount();
+  }, [formData.segment_id, user?.activeBusinessId]);
+
+  const loadTemplates = async () => {
+    try {
+      const res = await api.getBusinessTemplates(user.activeBusinessId);
+      // The API might return { templates: [...] } or just [...]
+      const templatesArray = Array.isArray(res) ? res : (res?.templates || []);
+      setTemplates(templatesArray);
+    } catch {
+      toast.error('Greška kod dohvaćanja predložaka');
+      setTemplates([]);
+    }
+  };
+
+  const handleCreateAndSend = async (action) => {
+    if (!formData.name.trim()) return toast.error('Kampanja mora imati naziv');
+    if (!formData.inline_message.trim() && !formData.template_id) return toast.error('Unesite poruku ili odaberite predložak');
+    
+    setIsSubmitting(true);
+    try {
+      const createRes = await api.createCampaign(user.activeBusinessId, {
+        name: formData.name,
+        channel: 'sms',
+        segment_id: formData.segment_id,
+        template_id: formData.template_id || null,
+        inline_message: formData.inline_message || null
+      });
+
+      const campaignId = createRes.insertId || createRes.id;
+
+      if (action === 'send') {
+        await api.sendCampaign(user.activeBusinessId, campaignId);
+        toast.success('Kampanja pokrenuta!');
+        navigate(`/marketing/campaigns/${campaignId}`);
+      } else if (action === 'schedule') {
+        if (!formData.scheduledAt) throw new Error('Unesite vrijeme slanja');
+        await api.scheduleCampaign(user.activeBusinessId, campaignId, formData.scheduledAt);
+        toast.success('Kampanja uspješno zakazana');
+        navigate(`/marketing/campaigns/${campaignId}`);
+      } else {
+        toast.success('Nacrt spremljen');
+        navigate(`/marketing/campaigns/${campaignId}`);
+      }
+    } catch (err) {
+      const errorMsg = err?.message || 'Došlo je do greške prilikom obrade';
+      toast.error(errorMsg);
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mkt-container" style={{ maxWidth: '800px' }}>
+      <div className="mkt-header">
+        <div className="mkt-title-group">
+          <h1 className="mkt-title">Nova kampanja</h1>
+          <p className="mkt-subtitle">Pošaljite masovnu poruku svojim klijentima u par jednostavnih koraka.</p>
+        </div>
+      </div>
+
+      <div style={{ paddingBottom: '100px' }}>
+        
+        {/* STEP 1: OSNOVNO */}
+        <div className="mkt-card">
+          <h2 className="mkt-card-title">1. Osnovne informacije</h2>
+          <div style={{ display: 'grid', gap: '20px' }}>
+            <div>
+              <label className="mkt-label">Naziv kampanje (interni naziv)</label>
+              <input 
+                className="mkt-input" 
+                placeholder="npr. Akcija za Dan žena"
+                value={formData.name}
+                onChange={e => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <label className="mkt-label">Kome šaljemo? (Ciljna grupa)</label>
+              <SegmentSelector 
+                value={formData.segment_id} 
+                onChange={val => setFormData({...formData, segment_id: val})} 
+              />
+              <div style={{ marginTop: '8px', fontSize: '13px', color: '#039855', fontWeight: '500' }}>
+                {loadingCount ? 'Računam broj primatelja...' : `Doseg: ~${previewCount} klijenata`}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* STEP 2: PORUKA */}
+        <div className="mkt-card">
+          <h2 className="mkt-card-title">2. Sadržaj poruke (SMS)</h2>
+          <div style={{ display: 'grid', gap: '20px' }}>
+             <div>
+              <label className="mkt-label">Odaberi predložak (opcionalno)</label>
+              <select 
+                className="mkt-input"
+                value={formData.template_id}
+                onChange={e => setFormData({...formData, template_id: e.target.value, inline_message: ''})}
+              >
+                <option value="">-- Bez predloška (upišite vlastiti tekst) --</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name || t.type}</option>
+                ))}
+              </select>
+            </div>
+
+            {!formData.template_id && (
+              <div>
+                <label className="mkt-label">Tekst poruke</label>
+                <textarea 
+                  className="mkt-input"
+                  style={{ minHeight: '120px' }}
+                  placeholder="Upišite sadržaj poruke. Primjer: Dragi {{clientName}}, posjetite nas..."
+                  value={formData.inline_message}
+                  onChange={e => setFormData({...formData, inline_message: e.target.value})}
+                ></textarea>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                  <span className="text-muted">
+                    Znakova: {formData.inline_message.length} / 160 ({Math.ceil(Math.max(1, formData.inline_message.length)/160)} kredita po klijentu)
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* STEP 3: VRIJEME */}
+        <div className="mkt-card">
+          <h2 className="mkt-card-title">3. Vrijeme slanja</h2>
+          <div>
+            <label className="mkt-label">Zakažite slanje (ostavite prazno za odmah)</label>
+            <input 
+              type="datetime-local" 
+              className="mkt-input" 
+              style={{ maxWidth: '300px' }}
+              value={formData.scheduledAt}
+              onChange={e => setFormData({...formData, scheduledAt: e.target.value})}
+            />
+          </div>
+        </div>
+
+      </div>
+
+      {/* FOOTER ACTIONS */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, 
+        backgroundColor: '#fff', borderTop: '1px solid #eaecf0',
+        padding: '16px 32px', display: 'flex', justifyContent: 'flex-end',
+        gap: '12px', zIndex: 100
+      }}>
+        <button 
+          className="mkt-btn" 
+          onClick={() => navigate('/marketing/campaigns')}
+          disabled={isSubmitting}
+        >
+          Odustani
+        </button>
+        <button 
+          className="mkt-btn" 
+          style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+          onClick={() => handleCreateAndSend('draft')}
+          disabled={isSubmitting}
+        >
+          Spremi kao nacrt
+        </button>
+        <button 
+          className="mkt-btn mkt-btn-primary" 
+          onClick={() => handleCreateAndSend(formData.scheduledAt ? 'schedule' : 'send')}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Slanje...' : (formData.scheduledAt ? 'Zakaži kampanju' : 'Pošalji odmah')}
+        </button>
+      </div>
+
+    </div>
+  );
+};
+
+export default CampaignWizard;

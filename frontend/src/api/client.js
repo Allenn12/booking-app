@@ -161,6 +161,86 @@ export const api = {
     method: 'DELETE'
   }),
 
+  // Clients
+  searchClients: (businessId, query, limit = 10) =>
+    apiRequest(`/business/${businessId}/clients/search?q=${encodeURIComponent(query)}&limit=${limit}`),
+
+  getBusinessClients: (businessId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/clients${qs ? `?${qs}` : ''}`);
+  },
+
+  getClientDetail: (businessId, clientId) =>
+    apiRequest(`/business/${businessId}/clients/${clientId}`),
+
+  updateClientNotes: (businessId, clientId, notes) =>
+    apiRequest(`/business/${businessId}/clients/${clientId}/notes`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notes })
+    }),
+
+  // Marketing
+  getSegments: (businessId) => apiRequest(`/business/${businessId}/marketing/segments`),
+  createSegment: (businessId, data) => apiRequest(`/business/${businessId}/marketing/segments`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  deleteSegment: (businessId, id) => apiRequest(`/business/${businessId}/marketing/segments/${id}`, { method: 'DELETE' }),
+  previewSegment: (businessId, id) => apiRequest(`/business/${businessId}/marketing/segments/${id}/preview`),
+
+  getCampaigns: (businessId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/marketing/campaigns${qs ? `?${qs}` : ''}`);
+  },
+  getCampaignById: (businessId, id) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}`),
+  createCampaign: (businessId, data) => apiRequest(`/business/${businessId}/marketing/campaigns`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  deleteCampaign: (businessId, id) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}`, { method: 'DELETE' }),
+  sendCampaign: (businessId, id) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}/send`, { method: 'POST' }),
+  scheduleCampaign: (businessId, id, date) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}/schedule`, {
+    method: 'POST',
+    body: JSON.stringify({ scheduledAt: date })
+  }),
+  cancelCampaign: (businessId, id) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}/cancel`, { method: 'POST' }),
+  previewCampaign: (businessId, id) => apiRequest(`/business/${businessId}/marketing/campaigns/${id}/preview`),
+  getCampaignRecipients: (businessId, id, page = 1) => 
+    apiRequest(`/business/${businessId}/marketing/campaigns/${id}/recipients?page=${page}`),
+
+  // ==========================================
+  // MARKETING - AUTOMATIONS
+  // ==========================================
+  getAutomations: (businessId) =>
+    apiRequest(`/business/${businessId}/marketing/automations`),
+  
+  createAutomation: (businessId, data) =>
+    apiRequest(`/business/${businessId}/marketing/automations`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    
+  getAutomationById: (businessId, automationId) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}`),
+    
+  updateAutomation: (businessId, automationId, data) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    
+  deleteAutomation: (businessId, automationId) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}`, { method: 'DELETE' }),
+    
+  enableAutomation: (businessId, automationId) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}/enable`, { method: 'POST' }),
+    
+  disableAutomation: (businessId, automationId) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}/disable`, { method: 'POST' }),
+
+  getAutomationStats: (businessId, automationId, days = 30) =>
+    apiRequest(`/business/${businessId}/marketing/automations/${automationId}/stats?days=${days}`),
+
   // Public Booking
   getPublicBusinessInfo: (slug) => apiRequest(`/public/book/${slug}`),
 

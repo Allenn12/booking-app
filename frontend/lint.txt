@@ -1,0 +1,12 @@
+﻿
+C:\Users\KORISNIK\Documents\App\frontend\src\components\ui\ClientSelector.jsx
+  59:16  error  'err' is defined but never used  no-unused-vars
+
+C:\Users\KORISNIK\Documents\App\frontend\src\pages\app\Appointments.jsx
+  36:8   warning  React Hook useEffect has missing dependencies: 'fetchAppointments' and 'fetchInitialData'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  47:18  error    'err' is defined but never used                                                                                                                no-unused-vars
+  59:18  error    'err' is defined but never used                                                                                                                no-unused-vars
+  73:18  error    'err' is defined but never used                                                                                                                no-unused-vars
+
+Ôťľ 5 problems (4 errors, 1 warning)
+

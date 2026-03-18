@@ -1,0 +1,273 @@
+/* ═══════════════════════════════════════════════════
+   ClientDetail.css — Styling for the Client Detail Page
+   ═══════════════════════════════════════════════════ */
+
+.client-detail-page {
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.client-detail-loading,
+.client-detail-error {
+  padding: 48px;
+  text-align: center;
+  color: #667085;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #475467;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  transition: color 0.15s;
+}
+
+.btn-back:hover {
+  color: #1d2939;
+}
+
+/* ─── Profile Header ─── */
+.cd-header-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #eaecf0;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cd-profile-info h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d2939;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cd-walkin-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 16px;
+  letter-spacing: 0.02em;
+}
+
+.cd-contact-row {
+  display: flex;
+  gap: 24px;
+  color: #475467;
+  font-size: 15px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.cd-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cd-stats-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f2f4f7;
+}
+
+.cd-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.cd-stat-label {
+  font-size: 12px;
+  color: #667085;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.cd-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d2939;
+}
+
+.cd-stat-value.danger {
+  color: #b42318;
+}
+
+/* ─── Main Grid Layout ─── */
+.cd-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .cd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cd-section {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #eaecf0;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+}
+
+.cd-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d2939;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Notes Editor ─── */
+.cd-notes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cd-notes-editor textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1d2939;
+  resize: vertical;
+  background: #f9fafb;
+}
+
+.cd-notes-editor textarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.cd-notes-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save-notes {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-save-notes:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.btn-save-notes:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Appointments Lists ─── */
+.cd-apt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cd-apt-empty {
+  color: #98a2b3;
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+.cd-apt-card {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #eaecf0;
+  background: #fcfcfd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cd-apt-card.upcoming {
+  border-left: 3px solid #7c3aed;
+  background: #f5f3ff;
+}
+
+.cd-apt-card.past {
+  background: #fff;
+}
+
+.cd-apt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cd-apt-date {
+  font-weight: 600;
+  color: #1d2939;
+  font-size: 15px;
+}
+
+.cd-apt-service {
+  color: #475467;
+  font-size: 14px;
+}
+
+.cd-apt-worker {
+  font-size: 12px;
+  color: #667085;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cd-apt-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-completed { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-cancelled { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.status-no_show   { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+.status-open      { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }

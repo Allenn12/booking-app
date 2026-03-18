@@ -23,6 +23,8 @@ import Appointments from '../pages/app/Appointments';
 import MyBusinesses from '../pages/app/MyBusinesses';
 import OnboardingPage from '../pages/app/OnboardingPage';
 import CreateJoinBusiness from '../pages/app/CreateJoinBusiness';
+import Clients from '../pages/app/Clients';
+import ClientDetail from '../pages/app/ClientDetail';
 
 // Business Pages
 import Overview from '../pages/app/business/Overview';
@@ -33,6 +35,14 @@ import Team from '../pages/app/business/Team';
 import AutomationsSettings from '../pages/app/messaging/AutomationsSettings';
 import TemplatesEditor from '../pages/app/messaging/TemplatesEditor';
 import LogsAndBilling from '../pages/app/messaging/LogsAndBilling';
+
+// Marketing Pages
+import Campaigns from '../pages/app/marketing/Campaigns';
+import CampaignWizard from '../pages/app/marketing/CampaignWizard';
+import CampaignDetail from '../pages/app/marketing/CampaignDetail';
+import Segments from '../pages/app/marketing/Segments';
+import Automations from '../pages/app/marketing/Automations';
+import AutomationDetail from '../pages/app/marketing/AutomationDetail';
 
 // ============================================
 // ROUTE CONFIGURATION
@@ -82,6 +92,14 @@ export const routeConfig = {
       component: Appointments
     },
     {
+      path: '/clients',
+      component: Clients
+    },
+    {
+      path: '/clients/:clientId',
+      component: ClientDetail
+    },
+    {
       path: '/my-businesses',
       component: MyBusinesses
     },
@@ -112,6 +130,30 @@ export const routeConfig = {
     {
       path: '/messaging/logs',
       component: LogsAndBilling
+    },
+    {
+      path: '/marketing/campaigns',
+      component: Campaigns
+    },
+    {
+      path: '/marketing/campaigns/new',
+      component: CampaignWizard
+    },
+    {
+      path: '/marketing/campaigns/:id',
+      component: CampaignDetail
+    },
+    {
+      path: '/marketing/segments',
+      component: Segments
+    },
+    {
+      path: '/marketing/automations',
+      component: Automations
+    },
+    {
+      path: '/marketing/automations/:id',
+      component: AutomationDetail
     }
   ]
 };

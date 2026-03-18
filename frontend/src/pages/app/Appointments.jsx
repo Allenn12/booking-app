@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../api/client';
 import { toast } from 'sonner';
+import ClientSelector from '../../components/ui/ClientSelector';
 
 function Appointments() {
     const { user } = useAuth();
@@ -17,21 +18,22 @@ function Appointments() {
 
     // Form state
     const [formData, setFormData] = useState({
-        clientName: '',
-        clientPhone: '',
         appointment_date: '',
         appointment_time: '',
         service_id: '',
         assigned_to_user_id: '',
         notes: ''
     });
-    const [phoneError, setPhoneError] = useState('');
+    // Client selection: { mode: 'none'|'existing'|'new'|'walk_in', clientId?, name?, phone?, email? }
+    const [clientSelection, setClientSelection] = useState({ mode: 'none' });
+    const [clientError, setClientError] = useState('');
 
     useEffect(() => {
         if (user?.activeBusinessId) {
             fetchInitialData();
             fetchAppointments();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.activeBusinessId, date]);
 
     const fetchInitialData = async () => {
@@ -44,6 +46,7 @@ function Appointments() {
             if (servicesRes.success) setServices(servicesRes.data.filter(s => s.is_active));
             if (teamRes.success) setTeam(teamRes.data);
         } catch (err) {
+            console.error('Fetch errors:', err);
             toast.error('Failed to load initial configuration data');
         }
     };
@@ -56,6 +59,7 @@ function Appointments() {
                 setAppointments(res.data);
             }
         } catch (err) {
+            console.error('Fetch errors:', err);
             toast.error('Failed to load appointments');
         } finally {
             setLoading(false);
@@ -70,6 +74,7 @@ function Appointments() {
                 setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
             }
         } catch (err) {
+            console.error('Update status error:', err);
             toast.error('Failed to update status');
         }
     };
@@ -96,53 +101,51 @@ function Appointments() {
             e.target.style.height = 'auto';
             e.target.style.height = e.target.scrollHeight + 'px';
         }
-
-        // Clear phone error when typing
-        if (name === 'clientPhone') setPhoneError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Phone Validation (E.164 strict)
-        let formattedPhone = formData.clientPhone.replace(/[\s-]/g, '');
-        if (formattedPhone.startsWith('0')) {
-            formattedPhone = '+385' + formattedPhone.substring(1);
-        } else if (!formattedPhone.startsWith('+')) {
-            formattedPhone = '+' + formattedPhone; // ensure it has a plus if it didn't start with 0
-        }
-
-        const phoneRegex = /^\+\d{10,14}$/;
-        if (!phoneRegex.test(formattedPhone)) {
-            setPhoneError('Neispravan format broja. Koristite format +38591234567');
+        // Client is required — validate before submit
+        if (clientSelection.mode === 'none') {
+            setClientError('Odaberite klijenta, kreirajte novog ili odaberite Walk-in');
             return;
         }
+        setClientError('');
 
         try {
             if (editingAppointment) {
-                // Update implementation can be expanded later
                 toast.error('Edit not currently configured for complex appointments');
             } else {
+                // Build base payload (appointment fields)
                 const payload = {
-                    ...formData,
-                    clientPhone: formattedPhone, // Use validated phone
                     appointment_datetime: `${formData.appointment_date}T${formData.appointment_time}`,
                     service_id: Number(formData.service_id),
-                    assigned_to_user_id: Number(formData.assigned_to_user_id)
+                    assigned_to_user_id: Number(formData.assigned_to_user_id),
+                    notes: formData.notes
                 };
+
+                // Map clientSelection to the 3 backend modes
+                if (clientSelection.mode === 'existing') {
+                    payload.client_id = clientSelection.clientId;
+                } else if (clientSelection.mode === 'walk_in') {
+                    payload.walkIn = true;
+                } else if (clientSelection.mode === 'new') {
+                    payload.clientName = clientSelection.name;
+                    payload.clientPhone = clientSelection.phone;
+                }
 
                 const res = await api.createAppointment(payload);
                 if (res.success) {
-                    toast.success('Appointment successfully created');
-                    if (res.data?.messaging_enabled) toast.info('Client notified via SMS');
+                    toast.success('Termin uspješno kreiran');
                 }
             }
             setShowModal(false);
             setEditingAppointment(null);
+            setClientSelection({ mode: 'none' });
             fetchAppointments();
         } catch (err) {
-            // Displays exact 400 Bad Request error from Backend (Overlaps, Hours, Phone)
-            toast.error(err.message || 'Failed to save appointment. Verify details.');
+            toast.error(err.message || 'Greška pri kreiranju termina.');
         }
     };
 
@@ -153,10 +156,9 @@ function Appointments() {
         }
 
         setEditingAppointment(null);
-        setPhoneError('');
+        setClientSelection({ mode: 'none' });
+        setClientError('');
         setFormData({
-            clientName: '',
-            clientPhone: '',
             appointment_date: date,
             appointment_time: '10:00',
             service_id: services[0]?.id || '',
@@ -276,16 +278,14 @@ function Appointments() {
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Client Name *</label>
-                                    <input type="text" name="clientName" required value={formData.clientName} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Client Phone *</label>
-                                    <input type="tel" name="clientPhone" required value={formData.clientPhone} onChange={handleChange} placeholder="+38591234567" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${phoneError ? '#dc3545' : '#ccc'}`, boxSizing: 'border-box' }} />
-                                    {phoneError && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{phoneError}</div>}
-                                </div>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px' }}>Klijent *</label>
+                                <ClientSelector
+                                    businessId={user?.activeBusinessId}
+                                    value={clientSelection}
+                                    onChange={(sel) => { setClientSelection(sel); setClientError(''); }}
+                                    error={clientError}
+                                />
                             </div>
 
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>

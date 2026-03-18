@@ -322,6 +322,13 @@ export const PublicBookingController = {
 
             await connection.commit();
 
+            // Increment client stats (non-blocking, outside transaction)
+            try {
+                await Client.incrementStats(finalClientId);
+            } catch (err) {
+                console.error('⚠️ Client.incrementStats failed (public):', err.message);
+            }
+
             // Trigger Notifications (Non-blocking)
             try {
                 const [serv] = await pool.query('SELECT name FROM services WHERE id=?', [service_id]);

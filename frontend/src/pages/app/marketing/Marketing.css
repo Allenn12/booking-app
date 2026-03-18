@@ -1,0 +1,269 @@
+/* ═══════════════════════════════════════════════════
+   Marketing.css — New Light Theme (App-Aligned)
+   Replaces the old industrial dark theme.
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* Colors aligned with Dashboard/Clients */
+  --mkt-bg: transparent;
+  --mkt-surface: #ffffff;
+  --mkt-surface-hover: #f9fafb;
+  --mkt-border: #eaecf0;
+  
+  --mkt-text-main: #1d2939; /* Aligned with Clients.css */
+  --mkt-text-muted: #667085;
+  --mkt-text-title: #1a1a2e; /* Aligned with Dashboard.jsx */
+  
+  --mkt-primary: #0d6efd; /* BookingApp Blue */
+  --mkt-primary-hover: #0b5ed7;
+  --mkt-danger: #d92d20; /* Error red */
+  --mkt-success: #039855; /* Success green */
+
+  /* Typography */
+  --mkt-font: "Inter", -apple-system, sans-serif;
+
+  /* Spacing & Radius */
+  --mkt-radius: 12px;
+  --mkt-shadow: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.mkt-container {
+  font-family: var(--mkt-font);
+  color: var(--mkt-text-main);
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.mkt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.mkt-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.mkt-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--mkt-text-title);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.mkt-subtitle {
+  font-size: 14px;
+  color: var(--mkt-text-muted);
+  margin-top: 4px;
+}
+
+/* ─── Cards ─── */
+.mkt-card {
+  background: var(--mkt-surface);
+  border-radius: var(--mkt-radius);
+  border: 1px solid var(--mkt-border);
+  box-shadow: var(--mkt-shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.mkt-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--mkt-text-title);
+}
+
+/* ─── Tables ─── */
+.mkt-table-container {
+  background: white;
+  border-radius: var(--mkt-radius);
+  border: 1px solid var(--mkt-border);
+  box-shadow: var(--mkt-shadow);
+  overflow: hidden;
+}
+
+.mkt-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.mkt-table th {
+  padding: 12px 24px;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475467;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--mkt-border);
+}
+
+.mkt-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--mkt-border);
+  font-size: 14px;
+  color: var(--mkt-text-main);
+  vertical-align: middle;
+}
+
+.mkt-table tr:hover {
+  background-color: var(--mkt-surface-hover);
+}
+
+.mkt-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Forms ─── */
+.mkt-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+  margin-bottom: 6px;
+}
+
+.mkt-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  font-size: 14px;
+  color: var(--mkt-text-main);
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.mkt-input:focus {
+  border-color: var(--mkt-primary);
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+}
+
+textarea.mkt-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ─── Buttons ─── */
+.mkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #344054;
+}
+
+.mkt-btn:hover {
+  background: #f9fafb;
+  border-color: #d0d5dd;
+}
+
+.mkt-btn-primary {
+  background: var(--mkt-primary);
+  color: #fff;
+  border: 1px solid var(--mkt-primary);
+}
+
+.mkt-btn-primary:hover {
+  background: var(--mkt-primary-hover);
+  border-color: var(--mkt-primary-hover);
+}
+
+.mkt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Status Badges (Pills) ─── */
+.mkt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Common pill colors */
+.badge-gray { background: #f2f4f7; color: #475467; border: 1px solid #eaecf0; }
+.badge-blue { background: #eff8ff; color: #2e90fa; border: 1px solid #d1e9ff; }
+.badge-green { background: #ecfdf3; color: #039855; border: 1px solid #d1fadf; }
+.badge-red { background: #fef3f2; color: #b42318; border: 1px solid #fee4e2; }
+.badge-orange { background: #fffaf0; color: #b45309; border: 1px solid #fed7aa; }
+
+/* ─── Utilities ─── */
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-2 { gap: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+.text-muted { color: var(--mkt-text-muted); font-size: 13px; }
+
+/* ─── Loading Spinner ─── */
+.mkt-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+  text-align: center;
+}
+
+.mkt-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--mkt-primary);
+  border-radius: 50%;
+  animation: mkt-spin 1s linear infinite;
+}
+
+@keyframes mkt-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ─── Empty States ─── */
+.mkt-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.mkt-empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.mkt-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--mkt-text-title);
+  margin-bottom: 8px;
+}
+
+.mkt-empty-subtitle {
+  font-size: 14px;
+  color: var(--mkt-text-muted);
+  max-width: 400px;
+}

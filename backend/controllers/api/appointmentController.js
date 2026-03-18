@@ -37,17 +37,16 @@ export const AppointmentController = {
             const businessId = req.session.activeBusinessId; // From session
             const { 
                 appointment_datetime, 
-                clientName, 
-                clientPhone, 
+                client_id,        // Mode 1: existing client
+                walkIn,           // Mode 2: walk-in sentinel
+                clientName,       // Mode 3: find-or-create
+                clientPhone,      // Mode 3: find-or-create
                 service_id, 
                 assigned_to_user_id, 
                 notes 
             } = req.body;
 
-            // 1. Sanitize Phone immediately per design requirement
-            const safePhone = normalizePhone(clientPhone);
-
-            if (!clientName) throw ERRORS.VALIDATION('Client name is required');
+            // === COMMON VALIDATION ===
             if (!appointment_datetime) throw ERRORS.VALIDATION('Appointment datetime is required');
             if (!service_id) throw ERRORS.VALIDATION('Service ID is required');
             if (!assigned_to_user_id) throw ERRORS.VALIDATION('Assigned worker ID is required');
@@ -60,30 +59,23 @@ export const AppointmentController = {
             if (serviceRows.length === 0) throw ERRORS.NOT_FOUND('Service not found or inactive');
             const durationMinutes = serviceRows[0].duration_minutes;
 
-            // 2. Validate Business Hours
+            // Validate Business Hours
             const aptDate = new Date(appointment_datetime);
             if (isNaN(aptDate.getTime())) throw ERRORS.VALIDATION('Invalid appointment datetime format');
 
-            // Map JS getDay() (0=Sun, 1=Mon) to ISO 1-7 (1=Mon, 7=Sun) representing EU calendar format
             let isoDay = aptDate.getDay();
             if (isoDay === 0) isoDay = 7;
 
             const hours = await BusinessHour.getByBusinessId(businessId);
             const dayConfig = hours.find(h => h.day_of_week === isoDay);
 
-            // Check if business explicitly toggled the CLOSED state for this day
             if (!dayConfig || dayConfig.is_closed === 1) {
                 throw ERRORS.BAD_REQUEST('Business is completely closed on this day.');
             }
 
-            // Check time bounds using padded HH:mm strings
             const aptStartFormatted = aptDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            
-            // Calculate end time
             const aptEndDate = new Date(aptDate.getTime() + durationMinutes * 60000);
             const aptEndFormatted = aptEndDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-            // Database usually returns time as 'HH:mm:ss', slice it to 'HH:mm' wrapper comparisons
             const openTimeStr = dayConfig.open_time.substring(0, 5); 
             const closeTimeStr = dayConfig.close_time.substring(0, 5);
 
@@ -91,7 +83,7 @@ export const AppointmentController = {
                 throw ERRORS.BAD_REQUEST(`Appointment strictly outside of working hours (${openTimeStr} to ${closeTimeStr}).`);
             }
 
-            // 3. Double Booking Check via SQL
+            // Double Booking Check
             const hasOverlap = await Appointment.checkOverlap(assigned_to_user_id, appointment_datetime, durationMinutes);
             if (hasOverlap) {
                 throw ERRORS.BAD_REQUEST('Worker is already booked at this time.');
@@ -101,36 +93,71 @@ export const AppointmentController = {
             connection = await pool.getConnection();
             await connection.beginTransaction();
 
-            // 4. Resolve Client logic (Atomic)
+            // === CLIENT RESOLUTION (3 modes) ===
             let finalClientId;
-            const existingClient = await Client.findByPhone(businessId, safePhone);
-            if (existingClient) {
+            let resolvedName = null;
+            let resolvedPhone = null;
+
+            if (client_id) {
+                // MODE 1: Existing client by ID
+                const existingClient = await Client.getByBusinessAndId(businessId, client_id);
+                if (!existingClient) {
+                    throw ERRORS.VALIDATION('Client not found in this business');
+                }
                 finalClientId = existingClient.id;
+                resolvedName = existingClient.name;
+                resolvedPhone = existingClient.phone;
+
+            } else if (walkIn === true) {
+                // MODE 2: Walk-in sentinel
+                const walkInClient = await Client.getOrCreateWalkIn(businessId);
+                finalClientId = walkInClient.id;
+                resolvedName = 'Walk-in';
+                resolvedPhone = null;
+
+            } else if (clientName && clientPhone) {
+                // MODE 3: Find-or-create by name + phone (backward compatible)
+                const safePhone = normalizePhone(clientPhone);
+                const existingClient = await Client.findByPhone(businessId, safePhone);
+                if (existingClient) {
+                    finalClientId = existingClient.id;
+                } else {
+                    finalClientId = await Client.create(businessId, {
+                        name: clientName,
+                        phone: safePhone
+                    }, connection);
+                }
+                resolvedName = clientName;
+                resolvedPhone = safePhone;
+
             } else {
-                finalClientId = await Client.create(businessId, {
-                    name: clientName,
-                    phone: safePhone
-                }, connection);
+                throw ERRORS.VALIDATION('Client info required: provide client_id, set walkIn:true, or provide clientName + clientPhone');
             }
 
-            // 5. Create the Appointment
+            // === CREATE APPOINTMENT ===
             const newAptId = await Appointment.create({
                 business_id: businessId,
                 client_id: finalClientId,
                 service_id,
                 assigned_to_user_id,
-                name: clientName, // Denormalized payload mapping
-                phone: safePhone, // Denormalized payload mapping
+                name: resolvedName,
+                phone: resolvedPhone,
                 appointment_datetime,
-                user_id: req.session.userId, // Whos account created it
+                user_id: req.session.userId,
                 status: 'scheduled',
                 notes
             }, connection);
 
-            // Successfully made it past all checks and inserts
             await connection.commit();
 
-            // 6. Trigger Notifications (Non-blocking)
+            // Increment client stats (non-blocking, outside transaction)
+            try {
+                await Client.incrementStats(finalClientId);
+            } catch (err) {
+                console.error('⚠️ Client.incrementStats failed:', err.message);
+            }
+
+            // Trigger Notifications (Non-blocking)
             try {
                 const fullBusiness = await Business.getById(businessId);
                 const [serv] = await pool.query('SELECT name FROM services WHERE id=?', [service_id]);
@@ -138,7 +165,7 @@ export const AppointmentController = {
                 
                 await NotificationService.handleAppointmentCreated(
                     { id: newAptId, start_time: appointment_datetime },
-                    { id: finalClientId, first_name: clientName, phone: safePhone },
+                    { id: finalClientId, first_name: resolvedName, phone: resolvedPhone },
                     fullBusiness,
                     { name: serv[0]?.name },
                     { first_name: emp[0]?.first_name }
@@ -150,7 +177,7 @@ export const AppointmentController = {
             res.status(201).json({
                 success: true,
                 message: 'Appointment created successfully',
-                data: { id: newAptId, messaging_enabled: false }
+                data: { id: newAptId, client_id: finalClientId }
             });
 
         } catch (error) {
