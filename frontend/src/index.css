@@ -67,3 +67,14 @@
     @apply bg-background text-foreground min-h-screen font-sans antialiased;
   }
 }
+
+@layer utilities {
+  /* Utility to hide standard scrollbars while keeping scroll functionality */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

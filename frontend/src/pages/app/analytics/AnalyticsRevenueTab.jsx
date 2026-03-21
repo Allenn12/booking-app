@@ -70,32 +70,62 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
           type: 'bar',
           toolbar: { show: false }
         },
+        dataLabels: { enabled: false },
         plotOptions: {
           bar: {
             borderRadius: 6,
+            borderRadiusApplication: 'end',
+            borderRadiusWhenStacked: 'last',
             columnWidth: '55%',
-            distributed: false,
-            dataLabels: { position: 'top' }
+            distributed: false
           }
         },
         xaxis: {
           ...apexChartsTheme.options.xaxis,
           categories: data.trend.map(r => formatChartDate(r.period, groupBy)),
+          tickAmount: data.trend.length <= 7 ? undefined : 5,
+          axisBorder: { show: false },
           labels: {
             rotate: 0,
-            style: { colors: '#64748b', fontSize: '10px' }
+            style: { 
+              colors: '#64748b', 
+              fontSize: '10px',
+              fontFamily: 'inherit'
+            }
+          }
+        },
+        yaxis: {
+          ...apexChartsTheme.options.yaxis,
+          labels: {
+            formatter: (val) => `${Math.round(val)}€`,
+            style: { colors: '#64748b' }
+          }
+        },
+        grid: {
+          show: true,
+          borderColor: 'rgba(148, 163, 184, 0.1)',
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: true } }
+        },
+        tooltip: {
+          theme: 'light',
+          y: {
+            formatter: (val) => `Prihod: ${fmtCurrency(val)}`
           }
         },
         fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.85,
-            opacityTo: 0.95,
-            stops: [0, 90, 100]
+          type: 'solid',
+          opacity: 0.85
+        },
+        states: {
+          hover: {
+            filter: {
+              type: 'darken',
+              value: 0.1
+            }
           }
         },
-        colors: [apexChartsTheme.colors.primary]
+        colors: ['#3B82F6']
       }
     };
   }, [data, groupBy]);

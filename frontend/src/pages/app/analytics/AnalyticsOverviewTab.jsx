@@ -116,22 +116,22 @@ export default function AnalyticsOverviewTab({ businessId, period, onTabChange }
         chart: {
           ...apexChartsTheme.options.chart,
           type: 'area',
-          sparkline: { enabled: false },
-          toolbar: { show: false }
         },
+        dataLabels: { enabled: false },
         stroke: { curve: 'smooth', width: 4 },
         fill: {
           type: 'gradient',
           gradient: {
             shadeIntensity: 1,
-            opacityFrom: 0.45,
-            opacityTo: 0.05,
-            stops: [0, 90, 100]
+            opacityFrom: 0.7,
+            opacityTo: 0.25,
+            stops: [0, 95, 100]
           }
         },
         xaxis: {
           ...apexChartsTheme.options.xaxis,
           categories: data.trend.map(r => formatChartDate(r.day, 'day')),
+          tickAmount: data.trend.length <= 7 ? undefined : 5,
           labels: {
             show: true,
             rotate: 0,
@@ -206,6 +206,7 @@ export default function AnalyticsOverviewTab({ businessId, period, onTabChange }
         },
         xaxis: {
           ...apexChartsTheme.options.xaxis,
+          tickAmount: 12, // Show every 2nd hour to avoid crowding
           labels: {
             show: true,
             style: { colors: '#64748b', fontSize: '10px' }
@@ -338,17 +339,15 @@ export default function AnalyticsOverviewTab({ businessId, period, onTabChange }
              </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-2">
+        <CardContent className="pt-2 overflow-hidden scrollbar-hide">
           {heatmapConfig && (
-            <div className="overflow-x-auto scroller-none">
-              <div className="min-w-[800px]">
-                <Chart 
-                  options={heatmapConfig.options}
-                  series={heatmapConfig.series}
-                  type="heatmap"
-                  height={320}
-                />
-              </div>
+            <div className="w-full">
+              <Chart 
+                options={heatmapConfig.options}
+                series={heatmapConfig.series}
+                type="heatmap"
+                height={320}
+              />
             </div>
           )}
         </CardContent>
