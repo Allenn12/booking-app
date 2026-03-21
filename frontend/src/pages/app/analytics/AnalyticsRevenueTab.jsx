@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { apexChartsTheme } from '@/lib/apexcharts-theme';
 import { formatChartDate } from '@/lib/chart-utils';
 import { 
-  BarChart4, 
+  BarChart2, 
   TrendingUp, 
   TrendingDown, 
   Filter,
@@ -58,10 +58,24 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
   const revenueTrendConfig = useMemo(() => {
     if (!data || !data.trend?.length) return null;
     
+    const trendData = data.trend;
+    const maxValue = Math.max(...trendData.map(r => r.revenue));
+
+    const getColumnWidth = (len) => {
+      if (len <= 3)  return '25%';
+      if (len <= 7)  return '45%';
+      if (len <= 15) return '60%';
+      return '70%';
+    };
+
     return {
       series: [{
         name: 'Prihod',
-        data: data.trend.map(r => r.revenue.toFixed(2))
+        data: trendData.map(r => ({
+          x: formatChartDate(r.period, groupBy),
+          y: r.revenue,
+          fillColor: (r.revenue === maxValue && maxValue > 0) ? '#3B82F6' : '#3B82F6BF'
+        }))
       }],
       options: {
         ...apexChartsTheme.options,
@@ -70,20 +84,20 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
           type: 'bar',
           toolbar: { show: false }
         },
+        legend: { show: false },
         dataLabels: { enabled: false },
         plotOptions: {
           bar: {
             borderRadius: 6,
             borderRadiusApplication: 'end',
             borderRadiusWhenStacked: 'last',
-            columnWidth: '55%',
+            columnWidth: getColumnWidth(trendData.length),
             distributed: false
           }
         },
         xaxis: {
           ...apexChartsTheme.options.xaxis,
-          categories: data.trend.map(r => formatChartDate(r.period, groupBy)),
-          tickAmount: data.trend.length <= 7 ? undefined : 5,
+          tickAmount: trendData.length <= 7 ? undefined : 5,
           axisBorder: { show: false },
           labels: {
             rotate: 0,
@@ -108,24 +122,30 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
           yaxis: { lines: { show: true } }
         },
         tooltip: {
-          theme: 'light',
-          y: {
-            formatter: (val) => `Prihod: ${fmtCurrency(val)}`
+          custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+            const value = series[seriesIndex][dataPointIndex];
+            const label = w.globals.labels[dataPointIndex];
+            return `
+              <div style="
+                background: #1e293b;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border: none;
+              ">
+                <div style="color: #94a3b8; margin-bottom: 2px">${label}</div>
+                <div>${value.toFixed(2).replace('.', ',')} €</div>
+              </div>
+            `;
           }
         },
         fill: {
           type: 'solid',
-          opacity: 0.85
-        },
-        states: {
-          hover: {
-            filter: {
-              type: 'darken',
-              value: 0.1
-            }
-          }
-        },
-        colors: ['#3B82F6']
+          opacity: 1 
+        }
       }
     };
   }, [data, groupBy]);
@@ -251,7 +271,7 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
               <div>
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   Struktura Prihoda
-                  <BarChart4 className="h-5 w-5 text-primary" />
+                  <BarChart2 className="h-5 w-5 text-primary" />
                 </CardTitle>
                 <CardDescription>Prikaz rasta prihoda po odabranom grupiranju.</CardDescription>
               </div>
@@ -269,7 +289,13 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
            </div>
         </CardHeader>
         <CardContent className="pt-2">
-           {revenueTrendConfig && (
+           {!data.trend?.length ? (
+             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/5 rounded-xl border border-dashed border-muted/20 m-6">
+               <BarChart2 className="h-12 w-12 mb-4 opacity-30" />
+               <p className="text-sm font-medium">Nema podataka o prihodima za ovaj period</p>
+               <p className="text-xs opacity-70 mt-1">Pokušajte promijeniti filtere ili period pretraživanja</p>
+             </div>
+           ) : (
              <Chart 
                options={revenueTrendConfig.options}
                series={revenueTrendConfig.series}
