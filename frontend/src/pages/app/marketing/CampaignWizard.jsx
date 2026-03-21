@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import SegmentSelector from '../../../components/marketing/SegmentSelector';
 import './Marketing.css';
@@ -12,6 +12,8 @@ import './Marketing.css';
 const CampaignWizard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [prefillClient, setPrefillClient] = useState(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -30,7 +32,24 @@ const CampaignWizard = () => {
     if (user?.activeBusinessId) {
       loadTemplates();
     }
-  }, [user?.activeBusinessId]);
+    // Read prefill from Analytics → at-risk client flow
+    const fromAnalytics = location.search.includes('source=analytics');
+    if (fromAnalytics) {
+      const stored = sessionStorage.getItem('prefillClient');
+      if (stored) {
+        try {
+          const client = JSON.parse(stored);
+          setPrefillClient(client);
+          setFormData(fd => ({ 
+            ...fd, 
+            name: `Poruka za ${client.name}`,
+            inline_message: `Dragi/a ${client.name.split(' ')[0]}, dugo Vas nismo vidjeli! Zakažite termin i dobijte popust na sljedeću posjetu.`
+          }));
+          sessionStorage.removeItem('prefillClient');
+        } catch { /* ignore */ }
+      }
+    }
+  }, [user?.activeBusinessId, location.search]);
 
   useEffect(() => {
     if (!user?.activeBusinessId) return;
@@ -114,6 +133,23 @@ const CampaignWizard = () => {
         </div>
       </div>
 
+      {/* Analytics → at-risk client banner */}
+      {prefillClient && (
+        <div style={{
+          background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10,
+          padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style={{ fontSize: 14, color: '#92400e' }}>
+            Kreiranje kampanje za klijenta <strong>{prefillClient.name}</strong> ({prefillClient.phone}) iz Analitike. 
+            Poruka je predpopunjena — uredite je po potrebi.
+          </span>
+          <button onClick={() => setPrefillClient(null)}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', fontSize: 18, lineHeight: 1 }}>×</button>
+        </div>
+      )}
       <div style={{ paddingBottom: '100px' }}>
         
         {/* STEP 1: OSNOVNO */}

@@ -1,1 +1,0 @@
-Column 'appointment_id' cannot be null

@@ -43,6 +43,7 @@ import CampaignDetail from '../pages/app/marketing/CampaignDetail';
 import Segments from '../pages/app/marketing/Segments';
 import Automations from '../pages/app/marketing/Automations';
 import AutomationDetail from '../pages/app/marketing/AutomationDetail';
+import Analytics from '../pages/app/analytics/Analytics';
 
 // ============================================
 // ROUTE CONFIGURATION
@@ -154,6 +155,10 @@ export const routeConfig = {
     {
       path: '/marketing/automations/:id',
       component: AutomationDetail
+    },
+    {
+      path: '/analytics',
+      component: Analytics
     }
   ]
 };

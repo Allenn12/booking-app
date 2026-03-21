@@ -183,6 +183,15 @@ function Sidebar() {
                     </div>
                 )}
 
+                {isOwnerOrAdmin && user?.activeBusinessId && (
+                    <Link
+                        to="/analytics"
+                        className={`nav-item ${isActive('/analytics') ? 'active' : ''}`}
+                    >
+                        📊 Analitika
+                    </Link>
+                )}
+
                 <Link
                     to="/profile"
                     className={`nav-item ${isActive('/profile') ? 'active' : ''}`}

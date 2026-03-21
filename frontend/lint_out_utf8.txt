@@ -1,0 +1,9 @@
+﻿
+C:\Users\KORISNIK\Documents\App\frontend\src\pages\app\analytics\AnalyticsClientsTab.jsx
+  22:7  error  'fmtCurrency' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\KORISNIK\Documents\App\frontend\src\pages\app\analytics\AnalyticsOverviewTab.jsx
+  30:58  error  'Icon' is defined but never used  no-unused-vars
+
+Ôťľ 2 problems (2 errors, 0 warnings)
+

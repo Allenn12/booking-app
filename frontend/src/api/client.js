@@ -241,15 +241,22 @@ export const api = {
   getAutomationStats: (businessId, automationId, days = 30) =>
     apiRequest(`/business/${businessId}/marketing/automations/${automationId}/stats?days=${days}`),
 
-  // Public Booking
-  getPublicBusinessInfo: (slug) => apiRequest(`/public/book/${slug}`),
+  // ==========================================
+  // ANALYTICS
+  // ==========================================
+  getAnalyticsOverview: (businessId, period = '30d') =>
+    apiRequest(`/business/${businessId}/analytics/overview?period=${period}`),
 
-  getPublicAvailability: (slug, date, serviceId) => apiRequest(`/public/book/${slug}/availability?date=${date}&service_id=${serviceId}`),
+  getAnalyticsRevenue: (businessId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/analytics/revenue${qs ? `?${qs}` : ''}`);
+  },
 
-  createPublicBooking: (slug, bookingData) => apiRequest(`/public/book/${slug}`, {
-    method: 'POST',
-    body: JSON.stringify(bookingData)
-  }),
+  getAnalyticsClients: (businessId, period = '30d') =>
+    apiRequest(`/business/${businessId}/analytics/clients?period=${period}`),
+
+  getAnalyticsStaff: (businessId, period = '30d') =>
+    apiRequest(`/business/${businessId}/analytics/staff?period=${period}`),
 };
 
 export default api;

@@ -7,6 +7,7 @@ import AppointmentController from '../../controllers/api/appointmentController.j
 import DashboardController from '../../controllers/api/dashboardController.js';
 import ClientController from '../../controllers/api/clientController.js';
 import MarketingController from '../../controllers/api/marketingController.js';
+import AnalyticsController from '../../controllers/api/analyticsController.js';
 import { validateBusinessOwner } from '../../middleware/businessMiddleware.js';
 const router = express.Router();
 
@@ -66,5 +67,11 @@ router.delete('/:id/marketing/automations/:automationId', MarketingController.de
 router.post('/:id/marketing/automations/:automationId/enable', MarketingController.enableAutomation);
 router.post('/:id/marketing/automations/:automationId/disable', MarketingController.disableAutomation);
 router.get('/:id/marketing/automations/:automationId/stats', MarketingController.getAutomationStats);
+
+// Analytics routes (Require Owner/Admin)
+router.get('/:id/analytics/overview', AnalyticsController.getOverview);
+router.get('/:id/analytics/revenue',  AnalyticsController.getRevenue);
+router.get('/:id/analytics/clients',  AnalyticsController.getClients);
+router.get('/:id/analytics/staff',    AnalyticsController.getStaff);
 
 export default router;
