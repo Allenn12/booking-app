@@ -28,3 +28,11 @@ dist-ssr
 *.sw?
 
 .env
+
+# Debug and utility scripts
+debug_*
+audit_*
+check_*
+fix_*
+db_fix_*
+eslint_report*.json
