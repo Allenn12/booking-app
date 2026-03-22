@@ -3,7 +3,11 @@ import pool from '../config/database.js';
 class Campaign {
   static async getAllForBusiness(businessId, limit = 50, offset = 0) {
     const sql = `
-      SELECT c.*, s.name as segment_name, t.type as template_type
+      SELECT 
+        c.*, 
+        s.name as segment_name, 
+        t.type as template_type,
+        (SELECT cl.name FROM campaign_recipients cr JOIN clients cl ON cr.client_id = cl.id WHERE cr.campaign_id = c.id LIMIT 1) as target_client_name
       FROM campaigns c
       LEFT JOIN segments s ON c.segment_id = s.id
       LEFT JOIN message_templates t ON c.template_id = t.id

@@ -5,12 +5,18 @@ import TemplateEngine from './TemplateEngine.js';
 
 const CampaignService = {
   async createCampaign(businessId, userId, data) {
-    const { name, channel, segment_id, template_id, inline_message } = data;
+    const { name, channel, segment_id, client_id, template_id, inline_message } = data;
     
     // Validate segment_id belongs to business if provided
     if (segment_id) {
         const [segRows] = await pool.query('SELECT id FROM segments WHERE id = ? AND business_id = ?', [segment_id, businessId]);
         if (segRows.length === 0) throw new Error('Invalid segment');
+    }
+
+    // Validate client_id belongs to business if provided
+    if (client_id) {
+        const [clientRows] = await pool.query('SELECT id FROM clients WHERE id = ? AND business_id = ?', [client_id, businessId]);
+        if (clientRows.length === 0) throw new Error('Invalid client');
     }
 
     const sql = `
@@ -19,7 +25,17 @@ const CampaignService = {
     `;
     const [result] = await pool.query(sql, [businessId, name, channel || 'sms', segment_id || null, template_id || null, inline_message || null, userId]);
     
-    return { id: result.insertId, status: 'draft' };
+    const campaignId = result.insertId;
+
+    // If targeting a single client, pre-insert them as the only recipient
+    if (client_id) {
+      await pool.query(
+        'INSERT IGNORE INTO campaign_recipients (campaign_id, client_id, status) VALUES (?, ?, ?)',
+        [campaignId, client_id, 'pending']
+      );
+    }
+
+    return { id: campaignId, status: 'draft' };
   },
 
   async previewRecipients(campaignId) {
@@ -84,12 +100,20 @@ const CampaignService = {
     const clientIds = await SegmentService.getClientIdsForSegment(camp.business_id, segment);
 
     // 4. Batch INSERT IGNORE recipients
-    if (clientIds.length > 0) {
+    // Only resolve segment if no recipients were pre-inserted (e.g. single-client campaigns)
+    const [existingRecipients] = await pool.query(
+      'SELECT COUNT(*) as count FROM campaign_recipients WHERE campaign_id = ?',
+      [campaignId]
+    );
+    const hasPreInsertedRecipients = existingRecipients[0].count > 0;
+
+    if (!hasPreInsertedRecipients && clientIds.length > 0) {
       const values = clientIds.map(cid => [campaignId, cid, 'pending']);
       await pool.query('INSERT IGNORE INTO campaign_recipients (campaign_id, client_id, status) VALUES ?', [values]);
     }
 
-    await pool.query('UPDATE campaigns SET total_recipients = ? WHERE id = ?', [clientIds.length, campaignId]);
+    const totalRecipients = hasPreInsertedRecipients ? existingRecipients[0].count : clientIds.length;
+    await pool.query('UPDATE campaigns SET total_recipients = ? WHERE id = ?', [totalRecipients, campaignId]);
 
     // 5. Build template
     let templateText = camp.inline_message;

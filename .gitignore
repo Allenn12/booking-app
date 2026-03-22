@@ -10,7 +10,7 @@ lerna-debug.log*
 node_modules/
 backend/node_modules/
 frontend/node_modules/
-.agent/
+#.agent/
 tmp/
 dist
 dist-ssr

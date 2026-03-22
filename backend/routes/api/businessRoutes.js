@@ -36,6 +36,7 @@ router.post('/:id/templates', BusinessController.updateTemplates); // POST /api/
 router.get('/:id/clients/search', ClientController.searchClients);    // GET /api/v1/business/:id/clients/search?q=...
 router.get('/:id/clients', ClientController.getClients);              // GET /api/v1/business/:id/clients
 router.get('/:id/clients/:clientId', ClientController.getClientDetail); // GET /api/v1/business/:id/clients/:clientId
+router.patch('/:id/clients/:clientId', ClientController.updateClient);  // PATCH /api/v1/business/:id/clients/:clientId
 router.patch('/:id/clients/:clientId/notes', ClientController.updateClientNotes); // PATCH notes
 
 // Marketing routes (Require Owner/Admin)

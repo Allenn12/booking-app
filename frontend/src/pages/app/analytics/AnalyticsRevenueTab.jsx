@@ -17,6 +17,7 @@ import {
   PieChart as PieChartIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/ui/modal';
 
 // --- Formatter Helpers ---
 const fmtCurrency = (n) =>
@@ -30,12 +31,108 @@ const GROUP_BY = [
 
 const DOW_SORTED = ['', 'Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub'];
 
+// --- Sub-components ---
+const FullReportModalTable = ({ services }) => {
+  const [sortConfig, setSortConfig] = useState({ key: 'revenue', direction: 'desc' });
+  
+  const totalRevenue = useMemo(() => services.reduce((sum, s) => sum + s.revenue, 0), [services]);
+  const totalBookings = useMemo(() => services.reduce((sum, s) => sum + s.bookings, 0), [services]);
+
+  const handleSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = useMemo(() => {
+    const dataWithCalculations = services.map(s => {
+      const share = totalRevenue > 0 ? (s.revenue / totalRevenue) * 100 : 0;
+      return { ...s, share };
+    });
+    
+    return dataWithCalculations.sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+      
+      if (typeof valA === 'string') {
+        const cmp = valA.localeCompare(valB);
+        return sortConfig.direction === 'asc' ? cmp : -cmp;
+      }
+      return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [services, sortConfig, totalRevenue]);
+
+  const renderSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) return null;
+    return <span className="ml-1 text-primary">{sortConfig.direction === 'desc' ? '↓' : '↑'}</span>;
+  };
+
+  return (
+    <div className="w-full overflow-hidden rounded-xl border">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b bg-muted/20">
+            <th 
+               className="px-6 py-3 text-[10px] font-bold uppercase text-muted-foreground tracking-wider cursor-pointer hover:bg-muted/30 select-none transition-colors"
+               onClick={() => handleSort('name')}
+            >
+              Usluga {renderSortIcon('name')}
+            </th>
+            <th 
+               className="px-6 py-3 text-[10px] font-bold uppercase text-muted-foreground tracking-wider text-right cursor-pointer hover:bg-muted/30 select-none transition-colors"
+               onClick={() => handleSort('revenue')}
+            >
+              Prihod {renderSortIcon('revenue')}
+            </th>
+            <th 
+               className="px-6 py-3 text-[10px] font-bold uppercase text-muted-foreground tracking-wider text-right cursor-pointer hover:bg-muted/30 select-none transition-colors"
+               onClick={() => handleSort('bookings')}
+            >
+              Br. termina {renderSortIcon('bookings')}
+            </th>
+            <th 
+               className="px-6 py-3 text-[10px] font-bold uppercase text-muted-foreground tracking-wider text-right cursor-pointer hover:bg-muted/30 select-none transition-colors"
+               onClick={() => handleSort('share')}
+            >
+              Udio {renderSortIcon('share')}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y relative">
+          {sortedData.map((item, i) => (
+            <tr key={i} className="hover:bg-muted/30 transition-colors">
+              <td className="px-6 py-3 text-sm font-bold">{item.name}</td>
+              <td className="px-6 py-3 text-sm font-black text-emerald-600 text-right">{fmtCurrency(item.revenue)}</td>
+              <td className="px-6 py-3 text-xs font-semibold text-muted-foreground text-right">{item.bookings}</td>
+              <td className="px-6 py-3 text-xs font-semibold text-muted-foreground text-right">
+                 {item.share.toFixed(1)}%
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot className="border-t-2 bg-muted/5">
+          <tr>
+            <td className="px-6 py-3 text-sm font-bold text-foreground">Ukupno</td>
+            <td className="px-6 py-3 text-sm font-black text-emerald-600 text-right">{fmtCurrency(totalRevenue)}</td>
+            <td className="px-6 py-3 text-xs font-semibold text-foreground text-right">{totalBookings}</td>
+            <td className="px-6 py-3 text-xs font-semibold text-muted-foreground text-right">100.0%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+};
+
 export default function AnalyticsRevenueTab({ businessId, period }) {
   const [groupBy, setGroupBy] = useState('day');
   const [serviceId, setServiceId] = useState('');
   const [staffId, setStaffId]     = useState('');
   const [data, setData]           = useState(null);
+  const [businessHours, setBusinessHours] = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -43,8 +140,16 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
       const params = { period, groupBy };
       if (serviceId) params.service_id = serviceId;
       if (staffId)   params.staff_id   = staffId;
-      const res = await api.getAnalyticsRevenue(businessId, params);
+      
+      const [res, bizRes] = await Promise.all([
+        api.getAnalyticsRevenue(businessId, params),
+        api.getBusinessById(businessId)
+      ]);
+      
       if (res.success) setData(res.data);
+      if (bizRes.success && bizRes.data?.business_hours) {
+        setBusinessHours(bizRes.data.business_hours);
+      }
     } catch {
       toast.error('Greška pri učitavanju prihoda');
     } finally {
@@ -150,46 +255,97 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
     };
   }, [data, groupBy]);
 
-  const dowConfig = useMemo(() => {
-    if (!data || !data.byDow) return null;
+  // --- Custom Revenue by Day Component ---
+  const RevenueByDayChart = ({ byDow, businessHoursConfig }) => {
+    if (!byDow?.length) return null;
 
-    const sortedDoc = [...data.byDow].sort((a, b) => {
-      const order = [2,3,4,5,6,7,1];
-      return order.indexOf(a.dow) - order.indexOf(b.dow);
-    });
+    // 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
+    // DESIRED: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    const MON_TO_SUN = [2, 3, 4, 5, 6, 7, 1];
+    
+    // Create a map for quick lookup that includes bookings
+    const dataMap = byDow.reduce((acc, r) => {
+      acc[r.dow] = { revenue: r.revenue, bookings: r.bookings || 0 };
+      return acc;
+    }, {});
 
-    return {
-      series: [{
-        name: 'Prihod',
-        data: sortedDoc.map(r => r.revenue.toFixed(2))
-      }],
-      options: {
-        ...apexChartsTheme.options,
-        chart: {
-           ...apexChartsTheme.options.chart,
-           type: 'bar',
-           toolbar: { show: false }
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: 8,
-            horizontal: true,
-            barHeight: '60%'
-          }
-        },
-        xaxis: {
-           ...apexChartsTheme.options.xaxis,
-           categories: sortedDoc.map(r => DOW_SORTED[r.dow]),
-           labels: {
-             formatter: (val) => `${val}€`,
-             style: { colors: '#64748b' }
-           }
-        },
-        colors: [apexChartsTheme.colors.emerald],
-        grid: { show: false }
+    // Determine active days based on business config
+    const isDayClosed = (mysqlDow) => {
+      const hasConfig = businessHoursConfig && businessHoursConfig.length > 0;
+      
+      if (hasConfig) {
+        // Map MySQL DOW (1=Sun, 7=Sat) to ISO DOW (1=Mon, 7=Sun)
+        const mysqlToIso = { 1: 7, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6 };
+        const isoDay = mysqlToIso[mysqlDow];
+        const config = businessHoursConfig.find(h => h.day_of_week === isoDay);
+        return !config || config.is_closed === 1;
       }
+      
+      // Fallback: if no config available, filter out days with 0 revenue & 0 bookings
+      const dayData = dataMap[mysqlDow];
+      const rev = dayData ? dayData.revenue : 0;
+      const count = dayData ? dayData.bookings : 0;
+      return rev === 0 && count === 0;
     };
-  }, [data]);
+    
+    // Filter out non-working days completely BEFORE rendering
+    const displayDays = MON_TO_SUN.filter(dow => !isDayClosed(dow));
+
+    const chartData = displayDays.map(dow => ({
+      dow,
+      label: DOW_SORTED[dow], // Title Case mapping (e.g. 'Pon')
+      revenue: dataMap[dow]?.revenue || 0
+    }));
+
+    const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
+    const totalRevenueAllDays = MON_TO_SUN.reduce((sum, dow) => sum + (dataMap[dow]?.revenue || 0), 0);
+    const avgRevenue = totalRevenueAllDays / 7;
+
+    return (
+      <div className="py-2">
+        {chartData.map((day, idx) => {
+          const isZero = day.revenue === 0;
+          const isMax = day.revenue === maxRevenue && maxRevenue > 0;
+          const pctOfMax = (day.revenue / maxRevenue) * 100;
+
+          return (
+            <div key={idx} className={cn("flex items-center gap-4 group py-3.5", isZero && "opacity-50 grayscale")}>
+              {/* Label */}
+              <div className="w-10 text-xs font-bold text-muted-foreground tracking-tight">
+                {day.label}
+              </div>
+
+              {/* Bar Container */}
+              <div className="flex-1 h-2.5 bg-muted/20 rounded-full overflow-hidden relative">
+                {!isZero && (
+                  <div 
+                    className={cn(
+                      "h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out",
+                      isMax ? "opacity-100" : "opacity-75"
+                    )}
+                    style={{ width: `${Math.max(pctOfMax, 1)}%` }}
+                  />
+                )}
+              </div>
+
+              {/* Right Side: Value */}
+              <div className="flex items-center gap-3 min-w-[80px] justify-end">
+                <span className={cn("text-sm font-black", isZero ? "text-muted-foreground" : "text-foreground")}>
+                  {isZero ? "—" : fmtCurrency(day.revenue)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+        
+        {/* Average Line Legend */}
+        <div className="mt-6 pt-4 border-t border-dashed flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Prosjek perioda</span>
+          <span className="text-xs font-black text-muted-foreground">{fmtCurrency(avgRevenue)}</span>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -315,24 +471,17 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
             <CardDescription>Koji dani su najprofitabilniji?</CardDescription>
           </CardHeader>
           <CardContent>
-            {dowConfig && (
-              <Chart 
-                options={dowConfig.options}
-                series={dowConfig.series}
-                type="bar"
-                height={260}
-              />
-            )}
+            <RevenueByDayChart byDow={data.byDow} businessHoursConfig={businessHours} />
           </CardContent>
         </Card>
 
         {/* Top Services Table */}
-        <Card className="shadow-sm border-none bg-card">
+        <Card className="shadow-sm border-none bg-card flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-6">
             <CardTitle className="text-lg font-bold">Učinak po uslugama</CardTitle>
             <PieChartIcon className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 flex flex-col flex-1">
              <div className="w-full overflow-hidden">
                <table className="w-full text-left">
                  <thead>
@@ -353,12 +502,28 @@ export default function AnalyticsRevenueTab({ businessId, period }) {
                  </tbody>
                </table>
              </div>
-             <div className="p-4 border-t bg-muted/5 text-center">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground hover:text-primary cursor-pointer transition-colors">Prikaži cjeloviti izvještaj</span>
-             </div>
+             {data.byService.length > 6 && (
+               <div className="p-4 border-t bg-muted/5 text-center mt-auto">
+                 <button 
+                   onClick={() => setIsModalOpen(true)}
+                   className="text-[10px] font-bold uppercase text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                 >
+                   Prikaži cjeloviti izvještaj
+                 </button>
+               </div>
+             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Services Modal */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Učinak po uslugama — Cjeloviti izvještaj"
+      >
+        <FullReportModalTable services={data.byService} />
+      </Modal>
     </div>
   );
 }

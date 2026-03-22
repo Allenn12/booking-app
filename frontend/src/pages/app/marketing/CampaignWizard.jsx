@@ -43,6 +43,8 @@ const CampaignWizard = () => {
           setFormData(fd => ({ 
             ...fd, 
             name: `Poruka za ${client.name}`,
+            // Use sentinel value -1 to indicate single-client mode
+            segment_id: -1,
             inline_message: `Dragi/a ${client.name.split(' ')[0]}, dugo Vas nismo vidjeli! Zakažite termin i dobijte popust na sljedeću posjetu.`
           }));
           sessionStorage.removeItem('prefillClient');
@@ -53,7 +55,11 @@ const CampaignWizard = () => {
 
   useEffect(() => {
     if (!user?.activeBusinessId) return;
-    
+    // When targeting a single client, skip the segment count API call
+    if (formData.segment_id === -1) {
+      setPreviewCount(1);
+      return;
+    }
     const fetchCount = async () => {
       setLoadingCount(true);
       try {
@@ -92,10 +98,12 @@ const CampaignWizard = () => {
     
     setIsSubmitting(true);
     try {
+      const isSingleClient = formData.segment_id === -1 && prefillClient;
       const createRes = await api.createCampaign(user.activeBusinessId, {
         name: formData.name,
         channel: 'sms',
-        segment_id: formData.segment_id,
+        segment_id: isSingleClient ? null : formData.segment_id,
+        client_id: isSingleClient ? prefillClient.id : undefined,
         template_id: formData.template_id || null,
         inline_message: formData.inline_message || null
       });
@@ -168,12 +176,41 @@ const CampaignWizard = () => {
             
             <div>
               <label className="mkt-label">Kome šaljemo? (Ciljna grupa)</label>
-              <SegmentSelector 
-                value={formData.segment_id} 
-                onChange={val => setFormData({...formData, segment_id: val})} 
-              />
+              {prefillClient && formData.segment_id === -1 ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '8px',
+                  background: '#f0fdf4', border: '1px solid #bbf7d0'
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: '#16a34a', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 900, fontSize: 14, flexShrink: 0
+                  }}>
+                    {prefillClient.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#14532d' }}>{prefillClient.name}</div>
+                    <div style={{ fontSize: 12, color: '#16a34a' }}>{prefillClient.phone}</div>
+                  </div>
+                  <button
+                    onClick={() => { setPrefillClient(null); setFormData(fd => ({ ...fd, segment_id: null })); }}
+                    title="Promijeni primatelja"
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', fontSize: 18 }}
+                  >×</button>
+                </div>
+              ) : (
+                <SegmentSelector 
+                  value={formData.segment_id} 
+                  onChange={val => setFormData({...formData, segment_id: val})} 
+                />
+              )}
               <div style={{ marginTop: '8px', fontSize: '13px', color: '#039855', fontWeight: '500' }}>
-                {loadingCount ? 'Računam broj primatelja...' : `Doseg: ~${previewCount} klijenata`}
+                {formData.segment_id === -1
+                  ? 'Doseg: 1 klijent'
+                  : loadingCount ? 'Računam broj primatelja...' : `Doseg: ~${previewCount} klijenata`
+                }
               </div>
             </div>
           </div>

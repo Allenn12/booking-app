@@ -76,12 +76,85 @@ const ClientController = {
             const hasAccess = await UserBusiness.checkAccess(userId, businessId);
             if (!hasAccess) throw ERRORS.FORBIDDEN('You do not have access to this business');
 
-            const result = await Client.getDetailWithHistory(businessId, clientId);
+            const { historyPage, historyLimit } = req.query;
+            const result = await Client.getDetailWithHistory(
+                businessId,
+                clientId,
+                Number(historyPage) || 1,
+                Number(historyLimit) || 10
+            );
             if (!result) throw ERRORS.NOT_FOUND('Client not found');
 
             res.status(200).json({
                 success: true,
                 data: result
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    /**
+     * PATCH /api/v1/business/:id/clients/:clientId
+     * Update basic client info: name, phone, email, notes.
+     */
+    updateClient: async (req, res, next) => {
+        try {
+            const businessId = req.params.id;
+            const clientId = req.params.clientId;
+            const userId = req.session.userId;
+
+            const hasAccess = await UserBusiness.checkAccess(userId, businessId);
+            if (!hasAccess) throw ERRORS.FORBIDDEN('You do not have access to this business');
+
+            // Multi-tenant safety
+            const existing = await Client.getByBusinessAndId(businessId, clientId);
+            if (!existing) throw ERRORS.NOT_FOUND('Client not found in this business');
+
+            // Cannot edit the Walk-in sentinel
+            if (existing.phone === 'WALKIN') {
+                throw ERRORS.VALIDATION('Cannot edit the Walk-in profile');
+            }
+
+            const { name, phone, email, notes } = req.body;
+
+            // Validate required fields
+            if (name !== undefined && (!name || name.trim().length < 2)) {
+                throw ERRORS.VALIDATION('Name must be at least 2 characters');
+            }
+            if (phone !== undefined) {
+                const trimmedPhone = (phone || '').trim();
+                if (!trimmedPhone) throw ERRORS.VALIDATION('Phone number is required');
+                // Basic phone sanity: allow digits, +, -, spaces, parens
+                if (!/^[+]?[0-9\s\-().]{6,20}$/.test(trimmedPhone)) {
+                    throw ERRORS.VALIDATION('Invalid phone number format');
+                }
+            }
+            if (email !== undefined && email && email.trim()) {
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+                    throw ERRORS.VALIDATION('Invalid email address format');
+                }
+            }
+
+            const updateData = {};
+            if (name  !== undefined) updateData.name  = name.trim();
+            if (phone !== undefined) updateData.phone = phone.trim();
+            if (email !== undefined) updateData.email = email ? email.trim() : null;
+            if (notes !== undefined) updateData.notes = notes || null;
+
+            if (Object.keys(updateData).length === 0) {
+                throw ERRORS.VALIDATION('No valid fields provided for update');
+            }
+
+            await Client.update(clientId, updateData);
+
+            // Return updated client
+            const updated = await Client.getByBusinessAndId(businessId, clientId);
+
+            res.status(200).json({
+                success: true,
+                message: 'Client updated successfully',
+                data: updated
             });
         } catch (error) {
             next(error);

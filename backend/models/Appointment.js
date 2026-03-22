@@ -9,18 +9,23 @@ const Appointment = {
     },
 
     findAll: async (businessId, date, dateFrom, dateTo) => {
-        let sql = 'SELECT * FROM appointment WHERE business_id = ? AND deleted_at IS NULL';
+        let sql = `
+            SELECT a.*, COALESCE(a.name, c.name, 'Walk-in') AS client_name, c.phone AS client_table_phone
+            FROM appointment a
+            LEFT JOIN clients c ON a.client_id = c.id
+            WHERE a.business_id = ? AND a.deleted_at IS NULL
+        `;
         const params = [businessId];
 
         if (dateFrom && dateTo) {
-            sql += ' AND DATE(appointment_datetime) >= ? AND DATE(appointment_datetime) <= ?';
+            sql += ' AND DATE(a.appointment_datetime) >= ? AND DATE(a.appointment_datetime) <= ?';
             params.push(dateFrom, dateTo);
         } else if (date) {
-            sql += ' AND DATE(appointment_datetime) = ?';
+            sql += ' AND DATE(a.appointment_datetime) = ?';
             params.push(date);
         }
 
-        sql += ' ORDER BY appointment_datetime ASC';
+        sql += ' ORDER BY a.appointment_datetime ASC';
         const [rows] = await pool.query(sql, params);
         return rows;
     },

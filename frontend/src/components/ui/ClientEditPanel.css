@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════
+   ClientEditPanel.css — Slide-over edit drawer
+   ═══════════════════════════════════════════════════ */
+
+/* Backdrop */
+.cep-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 400;
+  animation: cepFadeIn 0.2s ease-out;
+}
+
+/* Panel */
+.cep-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.18);
+  z-index: 401;
+  display: flex;
+  flex-direction: column;
+  animation: cepSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cepFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cepSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Header */
+.cep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.cep-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.cep-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cep-close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Body / Form */
+.cep-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Field */
+.cep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cep-field--grow {
+  flex: 1;
+}
+
+.cep-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cep-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.cep-optional {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* Input */
+.cep-input {
+  padding: 9px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  font-family: inherit;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cep-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.cep-input--error {
+  border-color: #ef4444;
+}
+
+.cep-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.cep-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.cep-error-msg {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+/* Footer */
+.cep-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  margin-top: auto;
+}
+
+.cep-btn-cancel {
+  padding: 9px 18px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.cep-btn-cancel:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.cep-btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cep-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  background: #7c3aed;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.cep-btn-save:hover:not(:disabled) {
+  background: #6d28d9;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.cep-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Save spinner */
+.cep-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cepSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes cepSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .cep-panel { max-width: 100%; }
+}

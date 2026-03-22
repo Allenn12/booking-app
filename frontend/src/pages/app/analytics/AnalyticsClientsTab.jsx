@@ -13,7 +13,7 @@ import {
   MessageSquare, 
   TrendingUp, 
   AlertCircle,
-  Clock,
+  CalendarX,
   PlusCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -87,11 +87,11 @@ export default function AnalyticsClientsTab({ businessId }) {
         ...apexChartsTheme.options,
         chart: {
            ...apexChartsTheme.options.chart,
-           type: 'line',
+           type: 'area',
            toolbar: { show: false }
         },
         stroke: { curve: 'smooth', width: 3 },
-        markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
+        markers: { size: 0, strokeWidth: 0, hover: { size: 6 } },
         xaxis: {
            ...apexChartsTheme.options.xaxis,
            categories: data.newVsReturning.map(r => r.month.slice(5)),
@@ -99,7 +99,7 @@ export default function AnalyticsClientsTab({ businessId }) {
         },
         fill: {
           type: 'solid',
-          opacity: [0.35, 1]
+          opacity: 0.1
         },
         colors: [apexChartsTheme.colors.primary, apexChartsTheme.colors.emerald],
         legend: {
@@ -107,7 +107,10 @@ export default function AnalyticsClientsTab({ businessId }) {
           horizontalAlign: 'right',
           markers: { radius: 12 },
           fontWeight: 600,
-          labels: { colors: '#64748b' }
+          labels: { colors: '#64748b' },
+          onItemClick: {
+            toggleDataSeries: false
+          }
         }
       }
     };
@@ -149,15 +152,7 @@ export default function AnalyticsClientsTab({ businessId }) {
           }
         },
         fill: {
-          type: 'gradient',
-          gradient: {
-            shade: 'light',
-            shadeIntensity: 0.4,
-            inverseColors: false,
-            opacityFrom: 1,
-            opacityTo: 1,
-            stops: [0, 50, 65, 91]
-          }
+          type: 'solid'
         },
         colors: [rate >= 60 ? '#10b981' : rate >= 40 ? '#f59e0b' : '#ef4444'],
         labels: ['Zadržavanje']
@@ -165,45 +160,12 @@ export default function AnalyticsClientsTab({ businessId }) {
     };
   }, [data]);
 
-  const topClientsConfig = useMemo(() => {
-    if (!data || !data.topClients?.length) return null;
-
-    const top5 = data.topClients.slice(0, 5);
-
-    return {
-      series: [{
-        name: 'Prihod',
-        data: top5.map(c => c.totalRevenue.toFixed(0))
-      }],
-      options: {
-        ...apexChartsTheme.options,
-        chart: { type: 'bar', toolbar: { show: false } },
-        plotOptions: {
-          bar: {
-             borderRadius: 10,
-             horizontal: true,
-             barHeight: '50%',
-             distributed: true,
-             dataLabels: { position: 'bottom' }
-          }
-        },
-        colors: ['#0d6efd', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'],
-        xaxis: {
-           categories: top5.map(c => c.name.split(' ')[0]),
-           labels: { show: false }
-        },
-        grid: { show: false },
-        legend: { show: false },
-        dataLabels: {
-          enabled: true,
-          textAnchor: 'start',
-          style: { colors: ['#fff'], fontWeight: '900' },
-          formatter: (val, opt) => `${opt.w.globals.labels[opt.dataPointIndex]}: ${val}€`,
-          offsetX: 10
-        }
-      }
-    };
+  const filteredTopClients = useMemo(() => {
+    if (!data?.topClients) return [];
+    return data.topClients.filter(c => c.name.toLowerCase() !== 'walk-in');
   }, [data]);
+
+  // Removed topClientsConfig in favor of custom UI
 
   if (loading) {
     return (
@@ -222,7 +184,10 @@ export default function AnalyticsClientsTab({ businessId }) {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Client Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="shadow-sm border-none bg-card relative overflow-hidden group">
+        <Card 
+          className="shadow-sm border-none bg-card relative overflow-hidden group cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => document.getElementById('at-risk-table')?.scrollIntoView({ behavior: 'smooth' })}
+        >
           <CardHeader className="pb-0">
              <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">Klijenti u riziku</CardTitle>
           </CardHeader>
@@ -240,11 +205,11 @@ export default function AnalyticsClientsTab({ businessId }) {
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-500" />
         </Card>
 
-        <Card className="shadow-sm border-none bg-card">
+        <Card className="shadow-sm border-none bg-card relative overflow-hidden group">
            <CardHeader className="pb-0">
              <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">Stopa Zadržavanja</CardTitle>
            </CardHeader>
-           <CardContent className="pt-2 flex items-center justify-between">
+            <CardContent className="pt-2 flex items-center justify-between">
               <div className="flex-1">
                 {retentionConfig && (
                   <Chart 
@@ -255,16 +220,11 @@ export default function AnalyticsClientsTab({ businessId }) {
                   />
                 )}
               </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Status</p>
-                <Badge variant="secondary" className={cn(
-                  "border-none font-black text-[10px] uppercase tracking-widest",
-                   data.retentionRate >= 60 ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-                )}>
-                  {data.retentionRate >= 80 ? 'Premium' : data.retentionRate >= 50 ? 'Dobro' : 'Nisko'}
-                </Badge>
-              </div>
            </CardContent>
+           <div className={cn(
+             "absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-500",
+             data.retentionRate >= 60 ? "bg-emerald-500/5" : data.retentionRate >= 40 ? "bg-amber-500/5" : "bg-rose-500/5"
+           )} />
         </Card>
 
         <Card className="shadow-sm border-none bg-card relative overflow-hidden group">
@@ -279,7 +239,7 @@ export default function AnalyticsClientsTab({ businessId }) {
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Prosjek u periodu</p>
             </div>
             <div className="p-3 bg-slate-500/10 text-slate-600 rounded-2xl">
-              <Clock className="h-6 w-6" />
+              <CalendarX className="h-6 w-6" />
             </div>
           </CardContent>
           <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-500" />
@@ -312,21 +272,65 @@ export default function AnalyticsClientsTab({ businessId }) {
              <CardTitle className="text-lg font-bold">Lojalnost (Prihod)</CardTitle>
              <CardDescription>Poredak top 5 lojalnih klijenata po doprinosu.</CardDescription>
           </CardHeader>
-          <CardContent>
-             {topClientsConfig && (
-               <Chart 
-                 options={topClientsConfig.options}
-                 series={topClientsConfig.series}
-                 type="bar"
-                 height={280}
-               />
-             )}
+          <CardContent className="px-6 pb-6 mt-2">
+             <div className="flex flex-col gap-3">
+               {filteredTopClients.slice(0, 5).map((client, idx) => (
+                 <div 
+                   key={client.id || idx} 
+                   className={cn(
+                     "flex items-center justify-between p-3 rounded-2xl transition-colors",
+                     idx === 0 ? "bg-amber-50 border border-amber-100" : "hover:bg-muted/50"
+                   )}
+                 >
+                   <div className="flex items-center gap-4">
+                     <div className={cn(
+                       "flex items-center justify-center w-8 h-8 rounded-full font-black text-xs",
+                       idx === 0 ? "bg-amber-500 text-white shadow-md shadow-amber-500/20" : "bg-muted text-muted-foreground"
+                     )}>
+                       #{idx + 1}
+                     </div>
+                     <div className="flex items-center gap-3">
+                       <div className={cn(
+                         "flex items-center justify-center w-10 h-10 rounded-full font-black text-sm",
+                         idx === 0 ? "bg-amber-200/50 text-amber-700" : "bg-primary/10 text-primary"
+                       )}>
+                         {client.name.charAt(0)}
+                       </div>
+                       <div className="flex flex-col">
+                         <span className={cn(
+                           "text-sm font-bold",
+                           idx === 0 ? "text-amber-900" : "text-foreground"
+                         )}>
+                           {client.name}
+                         </span>
+                         <span className="text-xs font-medium text-muted-foreground">
+                           {client.totalVisits ? `${client.totalVisits} posjeta` : 'Lojalan klijent'}
+                         </span>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="text-right">
+                     <span className={cn(
+                       "text-base font-black",
+                       idx === 0 ? "text-amber-700" : "text-foreground"
+                     )}>
+                       {fmtCurrency(client.totalRevenue)}
+                     </span>
+                   </div>
+                 </div>
+               ))}
+               {!filteredTopClients.length && (
+                  <div className="py-8 text-center text-sm text-muted-foreground font-medium">
+                    Nema dovoljno podataka o klijentima.
+                  </div>
+               )}
+             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* At-Risk Clients Table */}
-      <Card className="shadow-sm border-none bg-card">
+      <Card id="at-risk-table" className="shadow-sm border-none bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
            <div>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -355,17 +359,17 @@ export default function AnalyticsClientsTab({ businessId }) {
               <tbody className="divide-y">
                  {data.atRiskClients.slice(0, 8).map((client) => (
                    <tr key={client.id} className="group hover:bg-muted/30 transition-colors">
-                     <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm">
-                             {client.name.charAt(0)}
-                           </div>
-                           <div className="flex flex-col">
-                              <span className="text-sm font-bold group-hover:text-primary transition-colors">{client.name}</span>
-                              <span className="text-xs text-muted-foreground">{client.phone}</span>
-                           </div>
-                        </div>
-                     </td>
+                      <td className="px-6 py-4 cursor-pointer group/cell" onClick={() => navigate(`/clients/${client.id}`)}>
+                         <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm group-hover/cell:bg-primary group-hover/cell:text-primary-foreground transition-colors">
+                              {client.name.charAt(0)}
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-sm font-bold group-hover/cell:text-primary transition-colors">{client.name}</span>
+                               <span className="text-xs text-muted-foreground">{client.phone}</span>
+                            </div>
+                         </div>
+                      </td>
                      <td className="px-6 py-4 border-l">
                         <RiskLevelBadge daysSince={client.daysSinceLast} avgInterval={client.avgIntervalDays} />
                         <p className="text-[10px] font-medium text-muted-foreground mt-1">Ciklus: ~{client.avgIntervalDays} dana</p>

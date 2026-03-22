@@ -93,7 +93,7 @@ class MarketingController {
 
   static async createCampaign(req, res, next) {
     try {
-      const { name, channel, segment_id, template_id, inline_message } = req.body;
+      const { name, channel, segment_id, client_id, template_id, inline_message } = req.body;
       if (!name) throw ERRORS.VALIDATION('Kampanja mora imati ime');
       
       if (!inline_message && !template_id) {
@@ -101,7 +101,7 @@ class MarketingController {
       }
 
       const campaign = await CampaignService.createCampaign(req.business.id, req.user.id, {
-        name, channel, segment_id, template_id, inline_message
+        name, channel, segment_id, client_id, template_id, inline_message
       });
       res.status(201).json(campaign);
     } catch (err) {

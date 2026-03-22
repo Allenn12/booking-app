@@ -94,9 +94,15 @@ const Campaigns = () => {
               >
                 <td style={{ fontWeight: '600', color: '#1a1a2e' }}>{camp.name}</td>
                 <td>
-                  <span className="mkt-badge badge-gray">
-                    {camp.segment_name || (camp.segment_id ? `Grupa #${camp.segment_id}` : 'Svi klijenti')}
-                  </span>
+                  {camp.segment_name ? (
+                    <span className="mkt-badge badge-gray">{camp.segment_name}</span>
+                  ) : camp.total_recipients === 1 && camp.target_client_name ? (
+                    <span className="mkt-badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                      👤 {camp.target_client_name}
+                    </span>
+                  ) : (
+                    <span className="mkt-badge badge-gray">Svi klijenti</span>
+                  )}
                 </td>
                 <td><StatusBadge status={camp.status} /></td>
                 <td>

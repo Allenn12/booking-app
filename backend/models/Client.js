@@ -178,55 +178,97 @@ const Client = {
     /**
      * Get detailed client profile with upcoming and past appointments.
      */
-    getDetailWithHistory: async (businessId, clientId) => {
+    getDetailWithHistory: async (businessId, clientId, historyPage = 1, historyLimit = 10) => {
         // 1. Client info
         const clientSql = 'SELECT * FROM clients WHERE id = ? AND business_id = ?';
         const [clientRows] = await pool.query(clientSql, [clientId, businessId]);
         if (clientRows.length === 0) return null;
         const client = clientRows[0];
 
-        // 2. Computed no_show_count
-        const [noShowRows] = await pool.query(
-            `SELECT COUNT(*) AS no_show_count FROM appointment
-             WHERE client_id = ? AND status = 'no_show' AND deleted_at IS NULL`,
-            [clientId]
+        // 2. Computed stats (Arrivals, No-shows, Last Visit, Total Revenue)
+        const [statsRows] = await pool.query(
+            `SELECT 
+                COUNT(CASE WHEN a.status = 'completed' THEN 1 END) AS total_arrivals,
+                COUNT(CASE WHEN a.status = 'no_show' THEN 1 END) AS no_show_count,
+                MAX(CASE WHEN a.status = 'completed' AND a.appointment_datetime < NOW() THEN a.appointment_datetime END) AS last_visit_at,
+                COALESCE(SUM(CASE WHEN a.status = 'completed' THEN s.price ELSE 0 END), 0) AS total_revenue
+             FROM appointment a
+             LEFT JOIN services s ON a.service_id = s.id
+             WHERE a.client_id = ? AND a.business_id = ? AND a.deleted_at IS NULL`,
+            [clientId, businessId]
         );
-        client.no_show_count = noShowRows[0]?.no_show_count || 0;
+        const stats = statsRows[0] || {};
+        client.total_appointments = stats.total_arrivals || 0;
+        client.no_show_count = stats.no_show_count || 0;
+        client.last_appointment_at = stats.last_visit_at || null;
+        client.total_revenue = parseFloat(stats.total_revenue || 0);
 
-        // 3. Upcoming appointments
+        // 4. Upcoming appointments (scheduled only, future)
         const [upcoming] = await pool.query(
-            `SELECT a.id, a.appointment_datetime, a.status, a.notes,
-                    s.name AS service_name, s.duration_minutes,
+            `SELECT a.id, a.appointment_datetime, a.status, a.notes, a.name AS appointment_name,
+                    s.name AS service_name, s.duration_minutes, s.price AS service_price,
                     CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) AS worker_name
              FROM appointment a
              LEFT JOIN services s ON a.service_id = s.id
              LEFT JOIN user u ON a.assigned_to_user_id = u.id
              WHERE a.client_id = ? AND a.business_id = ?
                AND a.appointment_datetime >= NOW()
-               AND a.status = 'scheduled'
+               AND a.status NOT IN ('cancelled', 'no_show')
                AND a.deleted_at IS NULL
              ORDER BY a.appointment_datetime ASC
              LIMIT 10`,
             [clientId, businessId]
         );
 
-        // 4. Past appointments
+        // 5. Past appointments (paginated)
+        const safeLimit = Math.min(Math.max(1, Number(historyLimit) || 10), 50);
+        const safePage  = Math.max(1, Number(historyPage) || 1);
+        const offset    = (safePage - 1) * safeLimit;
+
         const [history] = await pool.query(
-            `SELECT a.id, a.appointment_datetime, a.status, a.notes,
-                    s.name AS service_name, s.duration_minutes,
+            `SELECT a.id, a.appointment_datetime, a.status, a.notes, a.name AS appointment_name,
+                    s.name AS service_name, s.duration_minutes, s.price AS service_price,
                     CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) AS worker_name
              FROM appointment a
              LEFT JOIN services s ON a.service_id = s.id
              LEFT JOIN user u ON a.assigned_to_user_id = u.id
              WHERE a.client_id = ? AND a.business_id = ?
-               AND (a.appointment_datetime < NOW() OR a.status != 'scheduled')
+               AND (a.appointment_datetime < NOW() OR a.status IN ('cancelled', 'no_show', 'completed'))
                AND a.deleted_at IS NULL
              ORDER BY a.appointment_datetime DESC
-             LIMIT 50`,
-            [clientId, businessId]
+             LIMIT ? OFFSET ?`,
+            [clientId, businessId, safeLimit, offset]
         );
 
-        return { client, upcoming, history };
+        // 6. Total history count (for "show more" logic)
+        const [historyCountRows] = await pool.query(
+            `SELECT COUNT(*) AS total FROM appointment a
+             WHERE a.client_id = ? AND a.business_id = ?
+               AND (a.appointment_datetime < NOW() OR a.status IN ('cancelled', 'no_show', 'completed'))
+               AND a.deleted_at IS NULL`,
+            [clientId, businessId]
+        );
+        const historyTotal = historyCountRows[0]?.total || 0;
+
+        return { client, upcoming, history, historyTotal, historyPage: safePage, historyLimit: safeLimit };
+    },
+
+    /**
+     * Update editable client fields (name, phone, email, notes).
+     * Whitelist-only — no arbitrary field injection possible.
+     */
+    update: async (clientId, data) => {
+        const ALLOWED = ['name', 'phone', 'email', 'notes'];
+        const fields  = Object.keys(data).filter(k => ALLOWED.includes(k) && data[k] !== undefined);
+        if (fields.length === 0) return false;
+
+        const setClause = fields.map(f => `${f} = ?`).join(', ');
+        const values    = fields.map(f => data[f] === '' ? null : data[f]);
+        values.push(clientId);
+
+        const sql = `UPDATE clients SET ${setClause} WHERE id = ?`;
+        const [result] = await pool.query(sql, values);
+        return result.affectedRows > 0;
     },
 
     /**

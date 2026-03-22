@@ -1,0 +1,211 @@
+/* Appointment Detail Panel (Slide-over) */
+.adp-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    animation: adpFadeIn 0.2s ease-out forwards;
+}
+
+.adp-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 420px;
+    max-width: 100vw;
+    background: #ffffff;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    animation: adpSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Header */
+.adp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.adp-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.adp-close-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    margin: -6px;
+    color: #64748b;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.adp-close-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+/* Body */
+.adp-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Status */
+.adp-status-section {
+    margin-bottom: 8px;
+}
+
+.adp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.adp-badge-scheduled { background: #dbeafe; color: #1e40af; }
+.adp-badge-completed { background: #dcfce7; color: #166534; }
+.adp-badge-cancelled { background: #f3f4f6; color: #4b5563; }
+.adp-badge-noshow { background: #fee2e2; color: #b91c1c; }
+
+/* Infolines */
+.adp-info-group {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.adp-info-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adp-notes-group .adp-info-icon {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.adp-info-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.adp-info-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.adp-info-value {
+    font-size: 1rem;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.adp-info-subtext {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.adp-price {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #059669; /* emerald-600 */
+}
+
+/* Removed adp-notes-text */
+
+/* Footer & Actions */
+.adp-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.adp-footer-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.adp-btn-navigate, .adp-btn-cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1; /* Automatically scales buttons to fill footer */
+}
+
+.adp-btn-navigate {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.adp-btn-navigate:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.adp-btn-cancel {
+    background: transparent;
+    border: 1px solid #fca5a5;
+    color: #ef4444;
+}
+
+.adp-btn-cancel:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+    color: #dc2626;
+}
+
+/* Animations */
+@keyframes adpFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes adpSlideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@media (max-width: 480px) {
+    .adp-panel {
+        width: 100vw;
+    }
+}

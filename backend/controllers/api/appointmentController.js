@@ -105,7 +105,7 @@ export const AppointmentController = {
                     throw ERRORS.VALIDATION('Client not found in this business');
                 }
                 finalClientId = existingClient.id;
-                resolvedName = existingClient.name;
+                resolvedName  = existingClient.name;
                 resolvedPhone = existingClient.phone;
 
             } else if (walkIn === true) {
@@ -115,9 +115,11 @@ export const AppointmentController = {
                 resolvedName = 'Walk-in';
                 resolvedPhone = null;
 
-            } else if (clientName && clientPhone) {
                 // MODE 3: Find-or-create by name + phone (backward compatible)
                 const safePhone = normalizePhone(clientPhone);
+                if (safePhone === 'WALKIN') {
+                    throw ERRORS.VALIDATION('Cannot manually create a client with reserved WALKIN phone number');
+                }
                 const existingClient = await Client.findByPhone(businessId, safePhone);
                 if (existingClient) {
                     finalClientId = existingClient.id;

@@ -170,8 +170,16 @@ export const api = {
     return apiRequest(`/business/${businessId}/clients${qs ? `?${qs}` : ''}`);
   },
 
-  getClientDetail: (businessId, clientId) =>
-    apiRequest(`/business/${businessId}/clients/${clientId}`),
+  getClientDetail: (businessId, clientId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/clients/${clientId}${qs ? `?${qs}` : ''}`);
+  },
+
+  updateClient: (businessId, clientId, data) =>
+    apiRequest(`/business/${businessId}/clients/${clientId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
 
   updateClientNotes: (businessId, clientId, notes) =>
     apiRequest(`/business/${businessId}/clients/${clientId}/notes`, {
