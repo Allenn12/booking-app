@@ -265,6 +265,70 @@ export const api = {
 
   getAnalyticsStaff: (businessId, period = '30d') =>
     apiRequest(`/business/${businessId}/analytics/staff?period=${period}`),
+
+  // ==========================================
+  // EMPLOYEE SCHEDULING
+  // ==========================================
+  getSchedule: (businessId, userId) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule`),
+    
+  createScheduleRow: (businessId, userId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    
+  updateScheduleRow: (businessId, userId, scheduleId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/${scheduleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    
+  deleteScheduleRow: (businessId, userId, scheduleId) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/${scheduleId}`, { method: 'DELETE' }),
+
+  getExceptions: (businessId, userId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/team/${userId}/schedule/exceptions${qs ? `?${qs}` : ''}`);
+  },
+  
+  createException: (businessId, userId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/exceptions`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    
+  updateException: (businessId, userId, exceptionId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/exceptions/${exceptionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    
+  deleteException: (businessId, userId, exceptionId) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/exceptions/${exceptionId}`, { method: 'DELETE' }),
+
+  getTimeOff: (businessId, userId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/business/${businessId}/team/${userId}/time-off${qs ? `?${qs}` : ''}`);
+  },
+  
+  createTimeOff: (businessId, userId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/time-off`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    
+  updateTimeOff: (businessId, userId, timeOffId, data) => 
+    apiRequest(`/business/${businessId}/team/${userId}/time-off/${timeOffId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
+    
+  deleteTimeOff: (businessId, userId, timeOffId) => 
+    apiRequest(`/business/${businessId}/team/${userId}/time-off/${timeOffId}`, { method: 'DELETE' }),
+
+  getScheduleOverview: (businessId, userId, from, to) => 
+    apiRequest(`/business/${businessId}/team/${userId}/schedule/overview?from=${from}&to=${to}`),
 };
 
 export default api;

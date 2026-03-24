@@ -6,6 +6,7 @@ import Client from '../../models/Client.js';
 import BusinessHour from '../../models/BusinessHour.js';
 import { normalizePhone } from '../../utils/phoneFormatter.js';
 import NotificationService from '../../services/NotificationService.js';
+import AvailabilityService from '../../services/AvailabilityService.js';
 
 /**
  * Public Booking Controller — NO auth required.
@@ -110,20 +111,6 @@ export const PublicBookingController = {
             if (serviceRows.length === 0) throw ERRORS.NOT_FOUND('Service not found or inactive');
             const durationMinutes = serviceRows[0].duration_minutes;
 
-            // Get business hours for this day of week (ISO: Mon=1, Sun=7)
-            let isoDay = dateObj.getDay();
-            if (isoDay === 0) isoDay = 7;
-
-            const hours = await BusinessHour.getByBusinessId(business.id);
-            const dayConfig = hours.find(h => h.day_of_week === isoDay);
-
-            if (!dayConfig || dayConfig.is_closed === 1) {
-                return res.status(200).json({ success: true, data: { slots: [] } });
-            }
-
-            const openTime = dayConfig.open_time.substring(0, 5); // "HH:mm"
-            const closeTime = dayConfig.close_time.substring(0, 5);
-
             // Get team members
             const [team] = await pool.query(
                 `SELECT u.id, CONCAT(u.first_name, ' ', u.last_name) AS name 
@@ -133,72 +120,19 @@ export const PublicBookingController = {
                 [business.id]
             );
 
-            // Get existing appointments for this date
-            const [existingApts] = await pool.query(
-                `SELECT assigned_to_user_id, appointment_datetime, 
-                        s.duration_minutes 
-                 FROM appointment a
-                 JOIN services s ON a.service_id = s.id
-                 WHERE a.business_id = ? 
-                   AND DATE(a.appointment_datetime) = ?
-                   AND a.status != 'cancelled'`,
-                [business.id, date]
-            );
-
-            // Build availability slots for each team member
             const slots = [];
-            const SLOT_INTERVAL = 15; // minutes
-
+            // Build availability slots for each team member
             for (const worker of team) {
-                // Get this worker's booked intervals
-                const workerApts = existingApts.filter(a => a.assigned_to_user_id === worker.id);
-                const bookedIntervals = workerApts.map(apt => {
-                    const start = new Date(apt.appointment_datetime);
-                    const end = new Date(start.getTime() + apt.duration_minutes * 60000);
-                    return { start, end };
-                });
+                const workerSlots = await AvailabilityService.getAvailableSlots(
+                    business.id, worker.id, service_id, date
+                );
 
-                // Generate candidate slots from open to close
-                const [openH, openM] = openTime.split(':').map(Number);
-                const [closeH, closeM] = closeTime.split(':').map(Number);
-
-                const dayStart = new Date(date + 'T00:00:00');
-                dayStart.setHours(openH, openM, 0, 0);
-
-                const dayEnd = new Date(date + 'T00:00:00');
-                dayEnd.setHours(closeH, closeM, 0, 0);
-
-                let cursor = new Date(dayStart);
-
-                while (cursor.getTime() + durationMinutes * 60000 <= dayEnd.getTime()) {
-                    const slotStart = new Date(cursor);
-                    const slotEnd = new Date(cursor.getTime() + durationMinutes * 60000);
-
-                    // Check for overlap with any existing appointment
-                    const hasOverlap = bookedIntervals.some(interval => 
-                        slotStart < interval.end && slotEnd > interval.start
-                    );
-
-                    // If today, skip slots that are in the past (with 30 min buffer)
-                    const now = new Date();
-                    const isToday = dateObj.toDateString() === now.toDateString();
-                    const tooLate = isToday && slotStart.getTime() < now.getTime() + 30 * 60000;
-
-                    if (!hasOverlap && !tooLate) {
-                        const timeStr = slotStart.toLocaleTimeString('en-GB', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
-                        slots.push({
-                            worker_id: worker.id,
-                            worker_name: worker.name,
-                            time: timeStr,
-                        });
-                    }
-
-                    // Advance by interval
-                    cursor = new Date(cursor.getTime() + SLOT_INTERVAL * 60000);
+                for (const slot of workerSlots) {
+                    slots.push({
+                        worker_id: worker.id,
+                        worker_name: worker.name,
+                        time: slot.time,
+                    });
                 }
             }
 
@@ -260,39 +194,18 @@ export const PublicBookingController = {
             );
             if (workerRows.length === 0) throw ERRORS.NOT_FOUND('Worker not found');
 
-            // Validate business hours
-            const aptDate = new Date(appointment_datetime);
-            if (isNaN(aptDate.getTime())) throw ERRORS.VALIDATION('Invalid datetime format');
-
-            let isoDay = aptDate.getDay();
-            if (isoDay === 0) isoDay = 7;
-
-            const hours = await BusinessHour.getByBusinessId(business.id);
-            const dayConfig = hours.find(h => h.day_of_week === isoDay);
-
-            if (!dayConfig || dayConfig.is_closed === 1) {
-                throw ERRORS.BAD_REQUEST('Business is closed on this day');
-            }
-
-            const aptStartFormatted = aptDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const aptEndDate = new Date(aptDate.getTime() + durationMinutes * 60000);
-            const aptEndFormatted = aptEndDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const openTimeStr = dayConfig.open_time.substring(0, 5);
-            const closeTimeStr = dayConfig.close_time.substring(0, 5);
-
-            if (aptStartFormatted < openTimeStr || aptEndFormatted > closeTimeStr) {
-                throw ERRORS.BAD_REQUEST('Appointment is outside of working hours');
-            }
-
-            // Double-booking check
-            const hasOverlap = await Appointment.checkOverlap(worker_id, appointment_datetime, durationMinutes);
-            if (hasOverlap) {
-                throw ERRORS.BAD_REQUEST('This time slot is no longer available');
-            }
-
             // === TRANSACTION ===
             connection = await pool.getConnection();
             await connection.beginTransaction();
+
+            // Validate slot (checks hours, schedules, constraints, and double-bookings with FOR UPDATE lock)
+            const validationResult = await AvailabilityService.validateSlot(
+                business.id, worker_id, service_id, appointment_datetime, connection
+            );
+            
+            if (!validationResult.valid) {
+                throw ERRORS.BAD_REQUEST(validationResult.reason);
+            }
 
             // Resolve client
             let finalClientId;

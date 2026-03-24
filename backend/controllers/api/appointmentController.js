@@ -7,6 +7,7 @@ import UserBusiness from '../../models/UserBusiness.js';
 import { normalizePhone } from '../../utils/phoneFormatter.js';
 import fs from 'fs';
 import NotificationService from '../../services/NotificationService.js';
+import AvailabilityService from '../../services/AvailabilityService.js';
 
 export const AppointmentController = {
     getAll: async (req, res, next) => {
@@ -59,39 +60,19 @@ export const AppointmentController = {
             if (serviceRows.length === 0) throw ERRORS.NOT_FOUND('Service not found or inactive');
             const durationMinutes = serviceRows[0].duration_minutes;
 
-            // Validate Business Hours
-            const aptDate = new Date(appointment_datetime);
-            if (isNaN(aptDate.getTime())) throw ERRORS.VALIDATION('Invalid appointment datetime format');
-
-            let isoDay = aptDate.getDay();
-            if (isoDay === 0) isoDay = 7;
-
-            const hours = await BusinessHour.getByBusinessId(businessId);
-            const dayConfig = hours.find(h => h.day_of_week === isoDay);
-
-            if (!dayConfig || dayConfig.is_closed === 1) {
-                throw ERRORS.BAD_REQUEST('Business is completely closed on this day.');
-            }
-
-            const aptStartFormatted = aptDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const aptEndDate = new Date(aptDate.getTime() + durationMinutes * 60000);
-            const aptEndFormatted = aptEndDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const openTimeStr = dayConfig.open_time.substring(0, 5); 
-            const closeTimeStr = dayConfig.close_time.substring(0, 5);
-
-            if (aptStartFormatted < openTimeStr || aptEndFormatted > closeTimeStr) {
-                throw ERRORS.BAD_REQUEST(`Appointment strictly outside of working hours (${openTimeStr} to ${closeTimeStr}).`);
-            }
-
-            // Double Booking Check
-            const hasOverlap = await Appointment.checkOverlap(assigned_to_user_id, appointment_datetime, durationMinutes);
-            if (hasOverlap) {
-                throw ERRORS.BAD_REQUEST('Worker is already booked at this time.');
-            }
-
             // === START TRANSACTION ===
             connection = await pool.getConnection();
             await connection.beginTransaction();
+
+            // Validate slot (checks hours, schedules, constraints, and double-bookings with FOR UPDATE lock)
+            const validationResult = await AvailabilityService.validateSlot(
+                businessId, assigned_to_user_id, service_id, appointment_datetime, connection
+            );
+            
+            if (!validationResult.valid) {
+                // Return 400 with the specific reason (schedule conflict, closed, etc.)
+                throw ERRORS.BAD_REQUEST(validationResult.reason);
+            }
 
             // === CLIENT RESOLUTION (3 modes) ===
             let finalClientId;
@@ -115,6 +96,7 @@ export const AppointmentController = {
                 resolvedName = 'Walk-in';
                 resolvedPhone = null;
 
+            } else if (clientName && clientPhone) {
                 // MODE 3: Find-or-create by name + phone (backward compatible)
                 const safePhone = normalizePhone(clientPhone);
                 if (safePhone === 'WALKIN') {
@@ -196,8 +178,27 @@ export const AppointmentController = {
         try {
             const { id } = req.params;
             const payload = req.body;
-            // Simplistic update for now (primarily used for status)
+            
             const oldAppt = await Appointment.findById(id);
+            if (!oldAppt) throw ERRORS.NOT_FOUND('Appointment not found');
+
+            // If rescheduling or reassigning, validate the new slot
+            if (payload.appointment_datetime || payload.assigned_to_user_id || payload.service_id) {
+                const checkTime = payload.appointment_datetime || oldAppt.appointment_datetime;
+                const checkWorker = payload.assigned_to_user_id || oldAppt.assigned_to_user_id;
+                const checkService = payload.service_id || oldAppt.service_id;
+                
+                // Validate new slot
+                const validationResult = await AvailabilityService.validateSlot(
+                    oldAppt.business_id, checkWorker, checkService, checkTime
+                );
+                
+                if (!validationResult.valid) {
+                    throw ERRORS.BAD_REQUEST(validationResult.reason);
+                }
+            }
+
+            // Simplistic update for now (primarily used for status)
             const success = await Appointment.update(id, payload);
             if (!success) throw ERRORS.NOT_FOUND('Appointment not found');
 

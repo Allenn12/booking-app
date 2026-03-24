@@ -1,0 +1,92 @@
+[
+  {
+    "Tables_in_app": "appointment"
+  },
+  {
+    "Tables_in_app": "appointment_reminders"
+  },
+  {
+    "Tables_in_app": "automation_logs"
+  },
+  {
+    "Tables_in_app": "automations"
+  },
+  {
+    "Tables_in_app": "business"
+  },
+  {
+    "Tables_in_app": "business_hours"
+  },
+  {
+    "Tables_in_app": "business_invitations"
+  },
+  {
+    "Tables_in_app": "campaign_recipients"
+  },
+  {
+    "Tables_in_app": "campaigns"
+  },
+  {
+    "Tables_in_app": "clients"
+  },
+  {
+    "Tables_in_app": "country"
+  },
+  {
+    "Tables_in_app": "credit_transactions"
+  },
+  {
+    "Tables_in_app": "employee_breaks"
+  },
+  {
+    "Tables_in_app": "employee_schedule_exceptions"
+  },
+  {
+    "Tables_in_app": "employee_schedules"
+  },
+  {
+    "Tables_in_app": "employee_time_off"
+  },
+  {
+    "Tables_in_app": "exception_breaks"
+  },
+  {
+    "Tables_in_app": "invitations"
+  },
+  {
+    "Tables_in_app": "job"
+  },
+  {
+    "Tables_in_app": "message_template"
+  },
+  {
+    "Tables_in_app": "message_templates"
+  },
+  {
+    "Tables_in_app": "notification_logs"
+  },
+  {
+    "Tables_in_app": "segments"
+  },
+  {
+    "Tables_in_app": "services"
+  },
+  {
+    "Tables_in_app": "sessions"
+  },
+  {
+    "Tables_in_app": "user"
+  },
+  {
+    "Tables_in_app": "user_business"
+  },
+  {
+    "Tables_in_app": "user_settings"
+  },
+  {
+    "Tables_in_app": "verification_codes"
+  },
+  {
+    "Tables_in_app": "verification_tokens"
+  }
+]

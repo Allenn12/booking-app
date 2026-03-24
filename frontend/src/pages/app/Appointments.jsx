@@ -512,7 +512,7 @@ function Appointments() {
             {/* ── Header ── */}
             <div className="apt-header">
                 <h1 className="apt-title">Appointments</h1>
-                <button className="apt-new-btn" onClick={openCreate}>
+                <button className="apt-new-btn" onClick={() => openCreate()}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
@@ -576,7 +576,7 @@ function Appointments() {
                     <h2>{appointments.length > 0 ? 'No matching appointments' : 'No appointments today'}</h2>
                     <p>{appointments.length > 0 ? 'Try adjusting your filters.' : 'Your schedule is clear for this day.'}</p>
                     {appointments.length === 0 && (
-                        <button className="apt-new-btn" style={{ marginTop: 16 }} onClick={openCreate}>
+                        <button className="apt-new-btn" style={{ marginTop: 16 }} onClick={() => openCreate()}>
                             Book an Appointment
                         </button>
                     )}

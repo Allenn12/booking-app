@@ -8,6 +8,7 @@ import DashboardController from '../../controllers/api/dashboardController.js';
 import ClientController from '../../controllers/api/clientController.js';
 import MarketingController from '../../controllers/api/marketingController.js';
 import AnalyticsController from '../../controllers/api/analyticsController.js';
+import ScheduleController from '../../controllers/api/scheduleController.js';
 import { validateBusinessOwner } from '../../middleware/businessMiddleware.js';
 const router = express.Router();
 
@@ -22,8 +23,35 @@ router.get('/:id/dashboard', DashboardController.getStats); // GET /api/v1/busin
 router.get('/:id', BusinessController.getById);           // GET /api/v1/business/:id
 router.patch('/:id', BusinessController.update);          // PATCH /api/v1/business/:id
 router.get('/:id/team', TeamController.getTeam);          // GET /api/v1/business/:id/team
-router.patch('/:id/team/:userId/role', TeamController.updateRole); // PATCH /api/v1/business/:id/team/:userId/role
-router.delete('/:id/team/:userId', TeamController.removeMember); // DELETE /api/v1/business/:id/team/:userId
+router.patch('/:id/team/:userId/role', TeamController.updateRole);   // PATCH  /api/v1/business/:id/team/:userId/role
+router.delete('/:id/team/:userId', TeamController.removeMember);     // DELETE /api/v1/business/:id/team/:userId
+
+// ── Employee Schedule routes ─────────────────────────────────────────────────
+// NOTE: /schedule/overview and /schedule/exceptions MUST be registered before
+// /:scheduleId variants to prevent Express from treating 'overview'/'exceptions'
+// as a schedule row ID.
+
+// Recurring weekly schedule
+router.get('/:id/team/:userId/schedule',                              ScheduleController.getSchedule);         // GET    all schedule rows
+router.post('/:id/team/:userId/schedule',                             ScheduleController.createScheduleRow);   // POST   create row
+router.get('/:id/team/:userId/schedule/overview',                     ScheduleController.getScheduleOverview); // GET    week/month overview
+router.put('/:id/team/:userId/schedule/:scheduleId',                  ScheduleController.updateScheduleRow);   // PUT    update row
+router.delete('/:id/team/:userId/schedule/:scheduleId',               ScheduleController.deleteScheduleRow);   // DELETE row
+
+// Date-specific exceptions
+router.get('/:id/team/:userId/schedule/exceptions',                   ScheduleController.getExceptions);   // GET    list
+router.post('/:id/team/:userId/schedule/exceptions',                  ScheduleController.createException); // POST   create/replace
+router.put('/:id/team/:userId/schedule/exceptions/:exceptionId',      ScheduleController.updateException); // PUT    update
+router.delete('/:id/team/:userId/schedule/exceptions/:exceptionId',   ScheduleController.deleteException); // DELETE
+
+// Time off
+router.get('/:id/team/:userId/time-off',                              ScheduleController.getTimeOff);    // GET  list
+router.post('/:id/team/:userId/time-off',                             ScheduleController.createTimeOff); // POST create
+router.patch('/:id/team/:userId/time-off/:timeOffId',                 ScheduleController.updateTimeOff); // PATCH status/dates
+router.delete('/:id/team/:userId/time-off/:timeOffId',                ScheduleController.deleteTimeOff); // DELETE
+
+// Computed availability (admin calendar preview)
+router.get('/:id/team/:userId/availability',                          ScheduleController.getAvailability); // GET ?date=&service_id=
 router.get('/:id/services', BusinessController.getServices); // GET /api/v1/business/:id/services
 router.post('/:id/services', ServiceController.create);      // POST /api/v1/business/:id/services
 router.put('/:id/services/:serviceId', ServiceController.update); // PUT /api/v1/business/:id/services/:serviceId

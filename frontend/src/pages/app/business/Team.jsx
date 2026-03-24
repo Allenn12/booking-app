@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import api from '../../../api/client';
 import { toast } from 'sonner';
+import { Copy, RefreshCw, Trash2, CalendarDays } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
+import { ScheduleModal } from '../../../components/scheduling/ScheduleModal';
 
 function Team() {
     const { user } = useAuth();
@@ -10,6 +13,11 @@ function Team() {
     const [inviteCode, setInviteCode] = useState('');
     const [inviteToken, setInviteToken] = useState('');
     const [generatingCode, setGeneratingCode] = useState(false);
+    
+    // Schedule Modal state
+    const [businessHours, setBusinessHours] = useState([]);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
     const isOwnerOrAdmin = ['owner', 'admin'].includes(user?.role);
 
@@ -17,8 +25,20 @@ function Team() {
         if (user?.activeBusinessId) {
             fetchTeamData();
             fetchInviteCode(user.activeBusinessId);
+            fetchBusinessHours(user.activeBusinessId);
         }
     }, [user?.activeBusinessId]);
+
+    const fetchBusinessHours = async (businessId) => {
+        try {
+            const res = await api.getBusinessById(businessId);
+            if (res.success && res.data.business_hours) {
+                setBusinessHours(res.data.business_hours);
+            }
+        } catch (err) {
+            console.error('Failed to fetch business hours');
+        }
+    };
 
     const fetchTeamData = async () => {
         try {
@@ -54,9 +74,9 @@ function Team() {
         try {
             setGeneratingCode(true);
             const res = await api.regenerateInviteCode(user.activeBusinessId);
-            if (res.success && res.data?.newInviteCode) {
-                setInviteCode(res.data.newInviteCode);
-                setInviteToken(res.data.newToken);
+            if (res.success && res.data?.code) {
+                setInviteCode(res.data.code);
+                setInviteToken(res.data.token);
                 toast.success('Successfully generated new invite code');
             }
         } catch (err) {
@@ -101,70 +121,84 @@ function Team() {
         }
     };
 
+    const openSchedule = (member) => {
+        setSelectedMember(member);
+        setIsScheduleOpen(true);
+    };
+
     const inviteLink = inviteToken ? `${window.location.origin}/onboarding?token=${inviteToken}` : '';
 
-
-    if (loading) return <div>Loading team members...</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading team members...</div>;
 
     return (
-        <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h2 style={{ margin: 0, color: '#333' }}>Team Management</h2>
+        <div className="max-w-5xl mx-auto bg-card p-8 rounded-xl shadow-sm border">
+            
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-foreground m-0">Team Management</h2>
             </div>
 
             {/* Invitation Section */}
             {isOwnerOrAdmin && (
-                <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '30px', border: '1px solid #e9ecef' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '15px' }}>Invite New Members</h3>
+                <div className="bg-muted/30 p-6 rounded-xl mb-8 border border-border">
+                    <h3 className="text-lg font-semibold mt-0 mb-5">Invite New Members</h3>
 
-                    <div style={{ display: 'flex', gap: '20px', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', marginBottom: '5px', display: 'block' }}>INVITE LINK</label>
-                                <div style={{ display: 'flex' }}>
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col md:flex-row gap-6">
+                            <div className="flex-1">
+                                <label className="text-xs font-bold text-muted-foreground mb-2 block tracking-wider">
+                                    INVITE LINK
+                                </label>
+                                <div className="flex shadow-sm rounded-md">
                                     <input
                                         type="text"
                                         readOnly
                                         value={inviteLink || 'Generating...'}
-                                        style={{ flex: 1, padding: '10px', borderRadius: '4px 0 0 4px', border: '1px solid #ccc', background: '#eee' }}
+                                        className="flex-1 px-3 py-2 border border-r-0 border-input bg-muted text-sm rounded-l-md truncate focus:outline-none"
                                     />
-                                    <button
+                                    <Button
+                                        variant="secondary"
+                                        className="rounded-l-none border border-input shadow-none px-4"
                                         onClick={() => handleCopy(inviteLink, 'Invite Link')}
-                                        style={{ padding: '10px 15px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '0 4px 4px 0', cursor: 'pointer' }}
                                     >
+                                        <Copy className="h-4 w-4 mr-2" />
                                         Copy Link
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', marginBottom: '5px', display: 'block' }}>INVITE CODE</label>
-                                <div style={{ display: 'flex' }}>
+                            <div className="flex-1">
+                                <label className="text-xs font-bold text-muted-foreground mb-2 block tracking-wider">
+                                    INVITE CODE
+                                </label>
+                                <div className="flex shadow-sm rounded-md">
                                     <input
                                         type="text"
                                         readOnly
                                         value={inviteCode || 'Generating...'}
-                                        style={{ flex: 1, padding: '10px', borderRadius: '4px 0 0 4px', border: '1px solid #ccc', background: '#eee', fontWeight: 'bold', textAlign: 'center', letterSpacing: '2px' }}
+                                        className="flex-1 px-3 py-2 border border-r-0 border-input bg-muted text-sm font-bold text-center tracking-widest rounded-l-md focus:outline-none"
                                     />
-                                    <button
+                                    <Button
+                                        variant="secondary"
+                                        className="rounded-l-none border border-input shadow-none px-4"
                                         onClick={() => handleCopy(inviteCode, 'Invite Code')}
-                                        style={{ padding: '10px 15px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '0 4px 4px 0', cursor: 'pointer' }}
                                     >
+                                        <Copy className="h-4 w-4 mr-2" />
                                         Copy Code
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <button
+                            <Button
+                                variant="outline"
                                 onClick={handleGenerateNewCode}
                                 disabled={generatingCode}
-                                style={{ padding: '8px 15px', background: 'transparent', color: '#0d6efd', border: '1px solid #0d6efd', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                className="text-primary border-primary hover:bg-primary/5"
                             >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${generatingCode ? 'animate-spin' : ''}`} />
                                 {generatingCode ? 'Generating...' : 'Regenerate Code & Link'}
-                            </button>
-                            <p style={{ fontSize: '12px', color: '#666', marginTop: '5px', marginBottom: 0 }}>
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-2 mb-0">
                                 Generating a new code will immediately invalidate the old link and code.
                             </p>
                         </div>
@@ -174,8 +208,8 @@ function Team() {
 
             {/* Team Members List */}
             <div>
-                <h3 style={{ marginBottom: '15px' }}>Current Members ({team.length})</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h3 className="text-lg font-semibold mb-5">Current Members ({team.length})</h3>
+                <div className="flex flex-col gap-3">
                     {team
                         .sort((a, b) => {
                             if (a.role === 'owner') return -1;
@@ -188,66 +222,73 @@ function Team() {
                             const isCurrentUser = member.user_id === user?.id;
 
                             return (
-                                <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', border: '1px solid #e9ecef', borderRadius: '6px' }}>
+                                <div key={member.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-4 border border-border rounded-lg bg-card hover:bg-muted/10 transition-colors gap-4">
                                     <div>
-                                        <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>
+                                        <div className="font-bold text-base text-foreground">
                                             {member.user_first_name} {member.user_last_name}
                                         </div>
-                                        <div style={{ fontSize: '14px', color: '#666' }}>
+                                        <div className="text-sm text-muted-foreground">
                                             {member.user_email}
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        {/* Role Badge / Selector */}
-                                        {isCurrentUser ? (
-                                            <span style={{
-                                                padding: '4px 10px',
-                                                borderRadius: '20px',
-                                                fontSize: '12px',
-                                                fontWeight: 'bold',
-                                                background: '#0d6efd',
-                                                color: 'white',
-                                                textTransform: 'capitalize'
-                                            }}>
-                                                Role: {member.role} (You)
-                                            </span>
-                                        ) : (
-                                            <>
-                                                {isOwnerOrAdmin && member.role !== 'owner' ? (
-                                                    <select
-                                                        value={member.role}
-                                                        onChange={(e) => handleRoleChange(member.user_id, e.target.value)}
-                                                        style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}
-                                                    >
-                                                        <option value="admin">Admin</option>
-                                                        <option value="employee">Employee</option>
-                                                    </select>
-                                                ) : (
-                                                    <span style={{
-                                                        padding: '4px 10px',
-                                                        borderRadius: '20px',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        background: member.role === 'owner' ? '#0d6efd' : '#e9ecef',
-                                                        color: member.role === 'owner' ? 'white' : '#333',
-                                                        textTransform: 'capitalize'
-                                                    }}>
-                                                        {member.role}
-                                                    </span>
-                                                )}
-
-                                                {/* Remove Button */}
-                                                {isOwnerOrAdmin && member.role !== 'owner' && (
-                                                    <button
-                                                        onClick={() => handleRemoveMember(member.user_id)}
-                                                        style={{ padding: '6px 12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                )}
-                                            </>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        
+                                        {/* Schedule Button */}
+                                        {isOwnerOrAdmin && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => openSchedule(member)}
+                                                className="bg-background"
+                                            >
+                                                <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                                                Schedule
+                                            </Button>
                                         )}
+
+                                        {/* Role Badge / Selector */}
+                                        <div className="flex items-center gap-2 border-l border-border pl-3 ml-1">
+                                            {isCurrentUser ? (
+                                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground capitalize">
+                                                    Role: {member.role} (You)
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    {isOwnerOrAdmin && member.role !== 'owner' ? (
+                                                        <select
+                                                            value={member.role}
+                                                            onChange={(e) => handleRoleChange(member.user_id, e.target.value)}
+                                                            className="px-2 py-1.5 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                                        >
+                                                            <option value="admin">Admin</option>
+                                                            <option value="employee">Employee</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${
+                                                            member.role === 'owner' 
+                                                                ? 'bg-primary text-primary-foreground' 
+                                                                : 'bg-muted text-foreground'
+                                                        }`}>
+                                                            {member.role}
+                                                        </span>
+                                                    )}
+
+                                                    {/* Remove Button */}
+                                                    {isOwnerOrAdmin && member.role !== 'owner' && (
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="icon"
+                                                            onClick={() => handleRemoveMember(member.user_id)}
+                                                            className="h-8 w-8 ml-1"
+                                                            title="Remove member"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -255,6 +296,18 @@ function Team() {
                 </div>
             </div>
 
+            {/* Modals */}
+            {selectedMember && (
+                <ScheduleModal
+                    isOpen={isScheduleOpen}
+                    onClose={() => setIsScheduleOpen(false)}
+                    userId={selectedMember.user_id}
+                    userName={`${selectedMember.user_first_name} ${selectedMember.user_last_name}`}
+                    businessId={user.activeBusinessId}
+                    businessHours={businessHours}
+                    isAdmin={isOwnerOrAdmin}
+                />
+            )}
         </div>
     );
 }
