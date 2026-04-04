@@ -146,7 +146,7 @@ const ClientController = {
                 throw ERRORS.VALIDATION('No valid fields provided for update');
             }
 
-            await Client.update(clientId, updateData);
+            await Client.update(clientId, updateData, businessId);
 
             // Return updated client
             const updated = await Client.getByBusinessAndId(businessId, clientId);
@@ -184,7 +184,7 @@ const ClientController = {
                 throw ERRORS.VALIDATION('Notes field is required (can be empty string or null)');
             }
 
-            await Client.updateNotes(clientId, notes);
+            await Client.updateNotes(clientId, notes, businessId);
 
             res.status(200).json({
                 success: true,

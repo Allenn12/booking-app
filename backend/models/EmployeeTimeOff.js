@@ -15,6 +15,7 @@ const EmployeeTimeOff = {
      * Optionally filtered to records overlapping a date range.
      */
     findByWorker: async (businessId, userId, { fromDate, toDate } = {}) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         let sql = `
             SELECT * FROM employee_time_off
             WHERE business_id = ? AND user_id = ?
@@ -38,6 +39,7 @@ const EmployeeTimeOff = {
      * This is optimally indexed on (business_id, user_id, start_date, end_date).
      */
     findForDate: async (businessId, userId, date) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [rows] = await pool.query(
             `SELECT * FROM employee_time_off
              WHERE business_id = ?
@@ -55,6 +57,7 @@ const EmployeeTimeOff = {
      * Find a single time-off record by ID.
      */
     findById: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [rows] = await pool.query(
             'SELECT * FROM employee_time_off WHERE id = ? AND business_id = ?',
             [id, businessId]
@@ -97,6 +100,7 @@ const EmployeeTimeOff = {
      * Update status or dates of an existing time-off record.
      */
     update: async (id, businessId, data) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const { status, note, start_date, end_date, approved_by } = data;
 
         const [existing] = await pool.query(
@@ -137,6 +141,7 @@ const EmployeeTimeOff = {
      * Hard delete is also supported if needed for admin cleanup.
      */
     cancel: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [result] = await pool.query(
             `UPDATE employee_time_off SET status = 'cancelled', updated_at = NOW()
              WHERE id = ? AND business_id = ?`,
@@ -147,6 +152,7 @@ const EmployeeTimeOff = {
     },
 
     delete: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [result] = await pool.query(
             'DELETE FROM employee_time_off WHERE id = ? AND business_id = ?',
             [id, businessId]

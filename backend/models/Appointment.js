@@ -2,9 +2,12 @@ import pool from '../config/database.js';
 import { ERRORS } from '../utils/errors.js';
 
 const Appointment = {
-    findById: async (id) => {
-        const sql = 'SELECT * FROM appointment WHERE id = ?';
-        const [rows] = await pool.query(sql, [id]);
+    findById: async (id, businessId) => {
+        if (!businessId) {
+            throw ERRORS.VALIDATION('Business ID is mandatory for scoped lookup');
+        }
+        const sql = 'SELECT * FROM appointment WHERE id = ? AND business_id = ?';
+        const [rows] = await pool.query(sql, [id, businessId]);
         return rows[0];
     },
 
@@ -81,6 +84,10 @@ const Appointment = {
                 notes
             } = data;
 
+            if (!business_id) {
+                throw ERRORS.VALIDATION('Business ID is mandatory for appointment creation');
+            }
+
             const sql = `
                 INSERT INTO appointment (
                     business_id, client_id, service_id, assigned_to_user_id, 
@@ -110,21 +117,28 @@ const Appointment = {
         }
     },
 
-    update: async (id, data) => {
+    update: async (id, data, businessId) => {
+        if (!businessId) {
+            throw ERRORS.VALIDATION('Business ID is mandatory for scoped update');
+        }
         const fields = Object.keys(data).filter(key => data[key] !== undefined);
         if (fields.length === 0) return false;
 
         const setClause = fields.map(field => `${field} = ?`).join(', ');
-        const params = [...fields.map(field => data[field]), id];
+        const params = [...fields.map(field => data[field]), id, businessId];
 
-        const sql = `UPDATE appointment SET ${setClause} WHERE id = ?`;
+        const sql = `UPDATE appointment SET ${setClause} WHERE id = ? AND business_id = ?`;
+
         const [result] = await pool.query(sql, params);
         return result.affectedRows > 0;
     },
 
-    delete: async (id) => {
-        const sql = 'UPDATE appointment SET deleted_at = NOW() WHERE id = ?';
-        const [result] = await pool.query(sql, [id]);
+    delete: async (id, businessId) => {
+        if (!businessId) {
+            throw ERRORS.VALIDATION('Business ID is mandatory for scoped delete');
+        }
+        const sql = 'UPDATE appointment SET deleted_at = NOW() WHERE id = ? AND business_id = ?';
+        const [result] = await pool.query(sql, [id, businessId]);
         return result.affectedRows > 0;
     }
 };

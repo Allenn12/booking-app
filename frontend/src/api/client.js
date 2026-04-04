@@ -1,8 +1,14 @@
-const API_URL = 'http://localhost:3000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+
+const logDev = (...args) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
 
 // Fetch wrapper sa credentials (cookies)
 async function apiRequest(endpoint, options = {}) {
-  console.log('🔵 API Request:', API_URL+endpoint);
+  logDev('🔵 API Request:', API_URL+endpoint);
 
   const config = {
     ...options,
@@ -13,15 +19,14 @@ async function apiRequest(endpoint, options = {}) {
     }
   };
 
-  console.log('📤 Config:', config)
+  logDev('📤 Config:', config);
 
   const response = await fetch(`${API_URL}${endpoint}`, config);
-  console.log('📥 Response Status:', response.status); // ⭐ DEBUG LOG
-  console.log('📥 Response Headers:', response.headers); // ⭐ DEBUG LOG
+  logDev('📥 Response Status:', response.status); // ⭐ DEBUG LOG
 
   const data = await response.json();
 
-  console.log('✅ Response Data:', data); // ⭐ DEBUG LOG
+  logDev('✅ Response Data:', data); // ⭐ DEBUG LOG
 
   if (!response.ok) {
     const error = new Error(data.error || 'API request failed');
@@ -329,6 +334,24 @@ export const api = {
 
   getScheduleOverview: (businessId, userId, from, to) => 
     apiRequest(`/business/${businessId}/team/${userId}/schedule/overview?from=${from}&to=${to}`),
+
+  // ==========================================
+  // PUBLIC BOOKING
+  // ==========================================
+  getPublicBusinessInfo: (slug) => 
+    apiRequest(`/public/book/${slug}`),
+    
+  getPublicAvailability: (slug, date, serviceId) => 
+    apiRequest(`/public/book/${slug}/availability?date=${date}&service_id=${serviceId}`),
+    
+  createPublicBooking: (slug, data) => 
+    apiRequest(`/public/book/${slug}`, {
+      method: 'POST', 
+      body: JSON.stringify(data)
+    }),
+
+  getPublicAvailabilityRange: (slug, start, end, serviceId) => 
+    apiRequest(`/public/book/${slug}/availability-range?start=${start}&end=${end}&service_id=${serviceId}`),
 };
 
 export default api;

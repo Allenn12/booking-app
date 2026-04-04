@@ -179,6 +179,55 @@ const AvailabilityService = {
     },
 
     /**
+     * Get boolean availability for a range of dates.
+     * Useful for calendar strips where we only need to know "is this day bookable at all?".
+     * @param {number} businessId
+     * @param {number} serviceId
+     * @param {string} startDate  YYYY-MM-DD
+     * @param {string} endDate    YYYY-MM-DD
+     * @returns {Record<string, boolean>} e.g. { "2026-03-27": true, "2026-03-28": false }
+     */
+    getAvailabilityRange: async (businessId, serviceId, startDate, endDate) => {
+        // Get team members
+        const [team] = await pool.query(
+            `SELECT u.id 
+             FROM user u 
+             JOIN user_business ub ON u.id = ub.user_id 
+             WHERE ub.business_id = ?`,
+            [businessId]
+        );
+
+        const startObj = new Date(startDate + 'T00:00:00');
+        const endObj = new Date(endDate + 'T00:00:00');
+        
+        // Safety check to prevent huge ranges
+        const diffDays = Math.ceil((endObj - startObj) / (1000 * 60 * 60 * 24));
+        if (diffDays > 60 || diffDays < 0) return {};
+
+        const result = {};
+        for (let d = new Date(startObj); d <= endObj; d.setDate(d.getDate() + 1)) {
+            // format locally to avoid UTC timezone shifts
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            
+            let isAvailable = false;
+            
+            for (const worker of team) {
+                const slots = await AvailabilityService.getAvailableSlots(businessId, worker.id, serviceId, dateStr);
+                if (slots && slots.length > 0) {
+                    isAvailable = true;
+                    break; // short-circuit: we only need to know if AT LEAST ONE slot exists
+                }
+            }
+            result[dateStr] = isAvailable;
+        }
+
+        return result;
+    },
+
+    /**
      * Validate whether a specific datetime slot is bookable for a worker+service.
      * Must be called INSIDE a database transaction for race-condition safety.
      *

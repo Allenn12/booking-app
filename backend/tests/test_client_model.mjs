@@ -107,12 +107,12 @@ async function test() {
     if (list.clients.length > 0) {
       const id = list.clients[0].id;
       const testNote = `Test note ${Date.now()}`;
-      await Client.updateNotes(id, testNote);
-      const updated = await Client.getById(id);
+      await Client.updateNotes(id, testNote, BUSINESS_ID);
+      const updated = await Client.getById(id, BUSINESS_ID);
       if (updated.notes !== testNote) throw new Error('Notes not saved');
       ok('updateNotes saved and verified');
       // Restore
-      await Client.updateNotes(id, list.clients[0].notes);
+      await Client.updateNotes(id, list.clients[0].notes, BUSINESS_ID);
     } else {
       ok('No clients (skipped)');
     }
@@ -124,16 +124,16 @@ async function test() {
     const list = await Client.listByBusiness(BUSINESS_ID, { limit: 1 });
     if (list.clients.length > 0) {
       const id = list.clients[0].id;
-      const before = await Client.getById(id);
-      await Client.incrementStats(id);
-      const after = await Client.getById(id);
+      const before = await Client.getById(id, BUSINESS_ID);
+      await Client.incrementStats(id, BUSINESS_ID);
+      const after = await Client.getById(id, BUSINESS_ID);
       if (after.total_appointments !== before.total_appointments + 1) {
         throw new Error(`Expected ${before.total_appointments + 1}, got ${after.total_appointments}`);
       }
       ok(`incrementStats: ${before.total_appointments} → ${after.total_appointments}`);
       // Rollback the increment
-      await pool.query('UPDATE clients SET total_appointments = ?, last_appointment_at = ? WHERE id = ?', 
-        [before.total_appointments, before.last_appointment_at, id]);
+      await pool.query('UPDATE clients SET total_appointments = ?, last_appointment_at = ? WHERE id = ? AND business_id = ?', 
+        [before.total_appointments, before.last_appointment_at, id, BUSINESS_ID]);
     } else {
       ok('No clients (skipped)');
     }

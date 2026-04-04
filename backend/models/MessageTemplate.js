@@ -1,8 +1,10 @@
 import pool from '../config/database.js';
+import { ERRORS } from '../utils/errors.js';
 
 class MessageTemplate {
   // Get all templates for a business
   static async getByBusinessId(businessId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const [rows] = await pool.query(
       'SELECT type, content FROM message_templates WHERE business_id = ?',
       [businessId]
@@ -12,6 +14,7 @@ class MessageTemplate {
 
   // Upsert a template for a business
   static async upsert(businessId, type, content) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       INSERT INTO message_templates (business_id, type, content)
       VALUES (?, ?, ?)

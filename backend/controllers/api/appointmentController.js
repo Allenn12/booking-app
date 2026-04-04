@@ -24,7 +24,8 @@ export const AppointmentController = {
 
     getById: async (req, res, next) => {
         try {
-            const appointment = await Appointment.findById(req.params.id);
+            const businessId = req.session.activeBusinessId;
+            const appointment = await Appointment.findById(req.params.id, businessId);
             if (!appointment) throw ERRORS.NOT_FOUND('Appointment not found');
             res.status(200).json({ success: true, data: appointment });
         } catch (error) {
@@ -136,7 +137,7 @@ export const AppointmentController = {
 
             // Increment client stats (non-blocking, outside transaction)
             try {
-                await Client.incrementStats(finalClientId);
+                await Client.incrementStats(finalClientId, businessId);
             } catch (err) {
                 console.error('⚠️ Client.incrementStats failed:', err.message);
             }
@@ -178,8 +179,9 @@ export const AppointmentController = {
         try {
             const { id } = req.params;
             const payload = req.body;
+            const businessId = req.session.activeBusinessId;
             
-            const oldAppt = await Appointment.findById(id);
+            const oldAppt = await Appointment.findById(id, businessId);
             if (!oldAppt) throw ERRORS.NOT_FOUND('Appointment not found');
 
             // If rescheduling or reassigning, validate the new slot
@@ -199,7 +201,7 @@ export const AppointmentController = {
             }
 
             // Simplistic update for now (primarily used for status)
-            const success = await Appointment.update(id, payload);
+            const success = await Appointment.update(id, payload, businessId);
             if (!success) throw ERRORS.NOT_FOUND('Appointment not found');
 
             // Trigger Cancellation Notification if status changed to cancelled
@@ -233,7 +235,8 @@ export const AppointmentController = {
     delete: async (req, res, next) => {
         try {
             const { id } = req.params;
-            const success = await Appointment.delete(id);
+            const businessId = req.session.activeBusinessId;
+            const success = await Appointment.delete(id, businessId);
             if (!success) throw ERRORS.NOT_FOUND('Appointment not found');
             res.status(200).json({ success: true, message: 'Appointment deleted' });
         } catch(error) {

@@ -98,26 +98,28 @@ const Invitation = {
         }
     },
 
-    incrementUsedCount: async (id) => {
+    incrementUsedCount: async (id, businessId) => {
         try {
-            const sql = 'UPDATE invitations SET used_count = used_count + 1 WHERE id = ?';
-            await pool.query(sql, [id]);
+            if (!businessId) throw ERRORS.VALIDATION('Business ID is required to update usage');
+            const sql = 'UPDATE invitations SET used_count = used_count + 1 WHERE id = ? AND business_id = ?';
+            await pool.query(sql, [id, businessId]);
             
             // Deactivate if max_uses is reached
-            const [rows] = await pool.query('SELECT used_count, max_uses FROM invitations WHERE id = ?', [id]);
+            const [rows] = await pool.query('SELECT used_count, max_uses FROM invitations WHERE id = ? AND business_id = ?', [id, businessId]);
             const inv = rows[0];
             if (inv && inv.max_uses !== null && inv.used_count >= inv.max_uses) {
-                await Invitation.deactivate(id);
+                await Invitation.deactivate(id, businessId);
             }
         } catch (error) {
             throw ERRORS.DATABASE(`Failed to update invitation usage: ${error.message}`);
         }
     },
 
-    deactivate: async (id) => {
+    deactivate: async (id, businessId) => {
         try {
-            const sql = 'UPDATE invitations SET is_active = 0 WHERE id = ?';
-            await pool.query(sql, [id]);
+            if (!businessId) throw ERRORS.VALIDATION('Business ID is required to deactivate');
+            const sql = 'UPDATE invitations SET is_active = 0 WHERE id = ? AND business_id = ?';
+            await pool.query(sql, [id, businessId]);
         } catch (error) {
             throw ERRORS.DATABASE(`Failed to deactivate invitation: ${error.message}`);
         }

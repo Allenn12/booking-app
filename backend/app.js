@@ -1,4 +1,3 @@
-//STANJE: GREŠKA KADA SE POKUŠAMO REGISTRIRATI, BROWSER KONZOLA GREŠKA
 
 
 import express, { Router } from 'express';
@@ -10,6 +9,7 @@ import crypto from 'crypto';
 import session from 'express-session';
 import MySQLStore from 'express-mysql-session';
 import cors from 'cors';
+import helmet from 'helmet';
 import './workers/reminderWorker.js';
 import './workers/campaignWorker.js';
 import './workers/automationWorker.js';
@@ -23,8 +23,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static('public'));
 
+app.use(helmet());
+
 app.use(cors({
-  origin: 'http://localhost:5173', // React dev server
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true // ⭐ BITNO! Allow cookies!
 }));
 
@@ -56,6 +58,9 @@ app.use(session({
   }
 }));
 
+import { globalLimiter } from './middleware/rateLimiter.js';
+
+app.use('/api', globalLimiter);
 app.use(routes);
 
 app.use((error, req, res, next) => {
@@ -71,8 +76,6 @@ app.use((error, req, res, next) => {
   // Default
   console.error('🔴 UNKNOWN ERROR:', error);
   if (error.stack) console.error(error.stack);
-  // DEBUG: Write to file
-  import('fs').then(fs => fs.appendFileSync('./debug_errors.log', `\n[${new Date().toISOString()}] ${error.message}\n${error.stack}\n`));
   return res.status(500).json({
     success: false,
     error: 'Desila se greška u sustavu',

@@ -72,6 +72,9 @@ const Service = {
             if (!id || isNaN(Number(id))) {
                 throw ERRORS.VALIDATION('Service ID must be a number');
             }
+            if (!businessId || isNaN(Number(businessId))) {
+                throw ERRORS.VALIDATION('Business ID is mandatory for scoped update');
+            }
             if (!serviceData.name) {
                 throw ERRORS.VALIDATION('Service name is required');
             }
@@ -103,6 +106,9 @@ const Service = {
         try {
             if (!id || isNaN(Number(id))) {
                 throw ERRORS.VALIDATION('Service ID must be a number');
+            }
+            if (!businessId || isNaN(Number(businessId))) {
+                throw ERRORS.VALIDATION('Business ID is mandatory for scoped delete');
             }
 
             const sql = `

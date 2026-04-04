@@ -1,0 +1,57 @@
+
+[1m[46m RUN [49m[22m [36mv4.1.1 [39m[90mC:/Users/KORISNIK/Documents/App/backend[39m
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m[dotenv@17.3.1] injecting env (12) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m✅ Reminder Worker started successfully
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m✅ Campaign Worker started successfully
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m✅ Automation Worker started successfully
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+✅ MySQL Session Store konfiguriran
+
+[90mstdout[2m | __tests__/security.test.js
+[22m[39m✅ Server running on http://localhost:3000
+
+ [31m❯[39m __tests__/security.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 75[2mms[22m[39m
+       [32m✓[39m should return identical 401 responses for unknown email and wrong password[32m 42[2mms[22m[39m
+[31m       [31m×[31m should return 429 Too Many Requests after 5 rapid login attempts[39m[32m 30[2mms[22m[39m
+       [32m✓[39m should pass businessId from session to Appointment.findById to prevent IDOR[32m 1[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 20:21:29
+[2m   Duration [22m 1.35s[2m (transform 452ms, setup 0ms, import 1.02s, tests 75ms, environment 0ms)[22m
+
+
+
+Sourcemap for "C:/Users/KORISNIK/Documents/App/backend/node_modules/node-cron/dist/esm/node-cron.js" points to missing source files
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m __tests__/security.test.js[2m > [22mSecurity Verification Tests (Phase 1)[2m > [22mTest 2: Rate limit verification[2m > [22mshould return 429 Too Many Requests after 5 rapid login attempts
+[31m[1mAssertionError[22m: expected 429 to be 401 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 401[39m
+[31m+ 429[39m
+
+[36m [2m❯[22m __tests__/security.test.js:[2m88:37[22m[39m
+    [90m 86|[39m       [90m// First 5 should be 401 (auth failed but not rate limited)[39m
+    [90m 87|[39m       [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m [34m5[39m[33m;[39m i[33m++[39m) {
+    [90m 88|[39m         [34mexpect[39m(responses[i][33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m401[39m)[33m;[39m
+    [90m   |[39m                                     [31m^[39m
+    [90m 89|[39m       }
+    [90m 90|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+

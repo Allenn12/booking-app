@@ -15,6 +15,7 @@ const EmployeeScheduleException = {
      * Optionally filter to a date range for the admin calendar view.
      */
     findByWorker: async (businessId, userId, { fromDate, toDate } = {}) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         let sql = `
             SELECT ese.*,
                    JSON_ARRAYAGG(
@@ -43,6 +44,7 @@ const EmployeeScheduleException = {
      * The UNIQUE constraint on (business_id, user_id, exception_date) ensures at most one row.
      */
     findForDate: async (businessId, userId, date) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [rows] = await pool.query(
             `SELECT ese.*
              FROM employee_schedule_exceptions ese
@@ -81,6 +83,7 @@ const EmployeeScheduleException = {
         if (!business_id || !user_id || !exception_date) {
             throw ERRORS.VALIDATION('business_id, user_id, and exception_date are required');
         }
+        if (isNaN(Number(business_id))) throw ERRORS.VALIDATION('business_id must be a number');
         if (!is_day_off && (!start_time || !end_time)) {
             throw ERRORS.VALIDATION('start_time and end_time are required when is_day_off=0');
         }
@@ -132,6 +135,7 @@ const EmployeeScheduleException = {
      * Update an existing exception by its ID.
      */
     update: async (id, businessId, data) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const {
             is_day_off = 0,
             start_time = null,
@@ -157,11 +161,11 @@ const EmployeeScheduleException = {
             await conn.query(
                 `UPDATE employee_schedule_exceptions
                  SET is_day_off = ?, start_time = ?, end_time = ?, reason = ?
-                 WHERE id = ?`,
+                 WHERE id = ? AND business_id = ?`,
                 [is_day_off ? 1 : 0,
                  is_day_off ? null : start_time,
                  is_day_off ? null : end_time,
-                 reason, id]
+                 reason, id, businessId]
             );
 
             await conn.query('DELETE FROM exception_breaks WHERE exception_id = ?', [id]);
@@ -187,6 +191,7 @@ const EmployeeScheduleException = {
      * Delete an exception by ID. FK CASCADE removes its breaks.
      */
     delete: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [result] = await pool.query(
             'DELETE FROM employee_schedule_exceptions WHERE id = ? AND business_id = ?',
             [id, businessId]

@@ -52,7 +52,7 @@ const InvitationController = {
             await UserBusiness.create(userId, invite.business_id, invite.role);
             
             // Update usage
-            await Invitation.incrementUsedCount(invite.id);
+            await Invitation.incrementUsedCount(invite.id, invite.business_id);
 
             res.status(200).json({ success: true, message: 'Joined successfully', data: { businessId: invite.business_id } });
         } catch (error) {
@@ -120,7 +120,7 @@ const InvitationController = {
                 
                 if (!existingMember) {
                     await UserBusiness.create(userId, invite.business_id, invite.role);
-                    await Invitation.incrementUsedCount(invite.id);
+                    await Invitation.incrementUsedCount(invite.id, invite.business_id);
                     
                     // Add success flash message
                     req.session.flash = { 

@@ -1,6 +1,0 @@
-feat(frontend): Implementirano zakazivanje zaposlenika i popravci bugova
-
-- Dodan cijeli modul za planiranje rasporeda zaposlenika (ScheduleModal, BreaksList, DayRow, ExceptionsTab, TimeOffTab, ConflictWarningPanel).
-- Refaktorirana stranica Team.jsx na Tailwind CSS i integriran [AlertDialog] za potvrdu odbacivanja promjena.
-- Popravljeno ažuriranje koda za pozivnice u Team.jsx u stvarnom vremenu.
-- Popravljen bug u Appointments.jsx s false-positive 'Postojeći' bedžem zbog preuranjenog SyntheticEvent parametarskog propuštanja.

@@ -73,10 +73,12 @@ export async function register(req, res, next) {
 export async function verifyEmailToken(req, res, next) {
     try {
         const { email, token } = req.query;
-        console.log("🔵 verifyEmailToken pozvan:", {
-            email,
-            token: token.substring(0, 20) + "...",
-        });
+        if (process.env.NODE_ENV === "development") {
+            console.log("🔵 verifyEmailToken pozvan:", {
+                email,
+                token: token?.substring(0, 20) + "...",
+            });
+        }
         if (!email || !token) {
             throw ERRORS.VALIDATION("Email i token su obavezni");
         }
@@ -111,10 +113,7 @@ export async function verifyEmailToken(req, res, next) {
                 maxAge: 7 * 24 * 60 * 60 * 1000  // 7 dana
             });*/
 
-        console.log("🟢 SESSION POSTAVLJENA NAKON VERIFICATION:", {
-            id: req.sessionID,
-            data: req.session,
-        });
+
 
         // ⭐ Handle pending invite
         if (req.session.pendingInviteToken) {
@@ -125,7 +124,7 @@ export async function verifyEmailToken(req, res, next) {
                 const alreadyMember = await UserBusiness.findByUserAndBusiness(user.id, invite.business_id);
                 if (!alreadyMember) {
                     await UserBusiness.create(user.id, invite.business_id, invite.role);
-                    await Invitation.incrementUsedCount(invite.id);
+                    await Invitation.incrementUsedCount(invite.id, invite.business_id);
 
                     // Add success flash message for new registration + join
                     req.session.flash = { 
@@ -137,7 +136,8 @@ export async function verifyEmailToken(req, res, next) {
             delete req.session.pendingInviteToken;
         }
 
-        return res.redirect("http://localhost:5173/verify-email?verified=true");
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        return res.redirect(`${frontendUrl}/verify-email?verified=true`);
     } catch (error) {
         next(error);
     }
@@ -145,10 +145,14 @@ export async function verifyEmailToken(req, res, next) {
 
 export async function checkVerification(req, res, next) {
     try {
-        console.log("🔍 checkVerification - Polling request");
+        if (process.env.NODE_ENV === "development") {
+            console.log("🔍 checkVerification - Polling request");
+        }
 
         if (!req.session || !req.session.userId) {
-            console.log("❌ Nema sesije");
+            if (process.env.NODE_ENV === "development") {
+                console.log("❌ Nema sesije");
+            }
             return res.status(401).json({
                 success: false,
                 verified: false,
@@ -158,7 +162,9 @@ export async function checkVerification(req, res, next) {
         const userId = req.session.userId;
         const user = await User.getByUserId(userId);
         if (!user) {
-            console.log("❌ User ne postoji:", userId);
+            if (process.env.NODE_ENV === "development") {
+                console.log("❌ User ne postoji:", userId);
+            }
             throw ERRORS.NOT_FOUND("Korisnik nije pronađen");
         }
 
@@ -167,12 +173,14 @@ export async function checkVerification(req, res, next) {
         if(isVerified){
             req.session.authenticated = true;
         }
-        console.log("📊 Status iz baze:", {
-            userId: user.id,
-            email: user.email,
-            verification_level: user.verification_level,
-            isVerified,
-        });
+        if (process.env.NODE_ENV === "development") {
+            console.log("📊 Status iz baze:", {
+                userId: user.id,
+                email: user.email,
+                verification_level: user.verification_level,
+                isVerified,
+            });
+        }
 
         return res.status(200).json({
             success: true,
@@ -180,14 +188,18 @@ export async function checkVerification(req, res, next) {
             verificationLevel: user.verification_level,
         });
     } catch (error) {
-        console.error("❌ checkVerification error:", error);
+        if (process.env.NODE_ENV === "development") {
+            console.error("❌ checkVerification error:", error);
+        }
         next(error);
     }
 }
 
 export async function resendVerificationLink(req, res, next) {
     try {
-        console.log("🔵 resendVerificationLink pozvan");
+        if (process.env.NODE_ENV === "development") {
+            console.log("🔵 resendVerificationLink pozvan");
+        }
 
         // Provjeri session
         if (!req.session || !req.session.userId || !req.session.userEmail) {
@@ -198,7 +210,7 @@ export async function resendVerificationLink(req, res, next) {
         }
 
         const { userId, userEmail } = req.session;
-        console.log("✅ Session OK:", { userId, userEmail });
+
 
         await User.invalidateOldTokens(userId, "email_verification");
 
@@ -213,33 +225,35 @@ export async function resendVerificationLink(req, res, next) {
 
         await sendVerificationEmail(userEmail, verificationLink);
 
-        console.log(`📧 Novi verification email poslan na: ${userEmail}`);
+        if (process.env.NODE_ENV === "development") {
+            console.log(`📧 Novi verification email poslan na: ${userEmail}`);
+        }
 
         return res.json({
             success: true,
             message: "Novi verification link poslan na email",
         });
     } catch (error) {
-        console.error("❌ resendVerificationLink error:", error);
+        if (process.env.NODE_ENV === "development") {
+            console.error("❌ resendVerificationLink error:", error);
+        }
         next(error);
     }
 }
 
 export async function login(req, res, next) {
     try {
-        console.log("🔵 LOGIN REQUEST:", req.body);
+
         const { email, password } = req.body;
 
         const user = await User.findByEmail(email);
         if (!user) {
-            console.log("❌ Validation failed: Email not registered");
-            throw ERRORS.AUTH("Email nije registriran");
+            throw ERRORS.AUTH("Email ili lozinka nisu ispravni");
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            console.log("❌ Validation failed: Password is incorrect");
-            throw ERRORS.AUTH("Lozinka je neispravna!");
+            throw ERRORS.AUTH("Email ili lozinka nisu ispravni");
         }
 
         if (user.verification_level !== "active") {
@@ -280,10 +294,7 @@ export async function login(req, res, next) {
         req.session.userEmail = user.email;
         req.session.authenticated = true;
 
-        console.log("🟢 SESSION NAKON LOGIN:", {
-            id: req.sessionID,
-            data: req.session,
-        });
+
 
         /*const authToken = jwt.sign(
                 {userId: user.id, email: user.email},

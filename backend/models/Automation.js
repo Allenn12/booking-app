@@ -1,7 +1,9 @@
 import pool from '../config/database.js';
+import { ERRORS } from '../utils/errors.js';
 
 class Automation {
   static async getAllForBusiness(businessId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       SELECT a.*, s.name as segment_name, t.type as template_type
       FROM automations a
@@ -15,6 +17,7 @@ class Automation {
   }
 
   static async getById(businessId, automationId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       SELECT a.*, s.name as segment_name, t.type as template_type
       FROM automations a
@@ -27,6 +30,7 @@ class Automation {
   }
 
   static async create(businessId, data) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const { name, type, channel, template_id, inline_message, segment_id, config } = data;
     const sql = `
       INSERT INTO automations 
@@ -47,6 +51,7 @@ class Automation {
   }
 
   static async update(businessId, automationId, data) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const { name, template_id, inline_message, segment_id, config } = data;
     const sql = `
       UPDATE automations 
@@ -66,18 +71,21 @@ class Automation {
   }
 
   static async delete(businessId, automationId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `DELETE FROM automations WHERE id = ? AND business_id = ?`;
     const [result] = await pool.query(sql, [automationId, businessId]);
     return result.affectedRows > 0;
   }
 
   static async setStatus(businessId, automationId, status) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `UPDATE automations SET status = ? WHERE id = ? AND business_id = ?`;
     const [result] = await pool.query(sql, [status, automationId, businessId]);
     return result.affectedRows > 0;
   }
 
   static async getStats(businessId, automationId, days = 30) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       SELECT DATE(sent_at) as date, COUNT(*) as sent_count
       FROM automation_logs al

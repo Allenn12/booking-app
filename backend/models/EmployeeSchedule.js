@@ -16,6 +16,7 @@ const EmployeeSchedule = {
      * Includes associated breaks. Used for admin schedule management UI.
      */
     findByWorker: async (businessId, userId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [rows] = await pool.query(
             `SELECT es.*,
                     JSON_ARRAYAGG(
@@ -39,6 +40,7 @@ const EmployeeSchedule = {
      * Returns null if no schedule row exists (caller falls back to business hours).
      */
     findForDate: async (businessId, userId, date) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         // dayOfWeek: JS getDay() returns 0=Sun, we need 1=Mon...7=Sun (ISO)
         const d = new Date(date + 'T12:00:00');
         const jsDay = d.getDay();
@@ -84,6 +86,7 @@ const EmployeeSchedule = {
         } = data;
 
         if (!business_id || !user_id) throw ERRORS.VALIDATION('business_id and user_id are required');
+        if (isNaN(Number(business_id))) throw ERRORS.VALIDATION('business_id must be a number');
         if (day_of_week < 1 || day_of_week > 7) throw ERRORS.VALIDATION('day_of_week must be 1–7');
         if (!is_day_off && (!start_time || !end_time)) throw ERRORS.VALIDATION('start_time and end_time are required when is_day_off=0');
         if (!is_day_off && start_time >= end_time) throw ERRORS.VALIDATION('start_time must be before end_time');
@@ -123,6 +126,7 @@ const EmployeeSchedule = {
      * Replace a schedule row (update all fields + replace breaks).
      */
     update: async (id, businessId, data) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const {
             start_time,
             end_time,
@@ -155,9 +159,9 @@ const EmployeeSchedule = {
                 `UPDATE employee_schedules
                  SET start_time = ?, end_time = ?, is_day_off = ?,
                      effective_from = ?, effective_to = ?, updated_at = NOW()
-                 WHERE id = ?`,
+                 WHERE id = ? AND business_id = ?`,
                 [is_day_off ? null : start_time, is_day_off ? null : end_time,
-                 is_day_off ? 1 : 0, effective_from, effective_to, id]
+                 is_day_off ? 1 : 0, effective_from, effective_to, id, businessId]
             );
 
             // Replace breaks atomically
@@ -180,6 +184,7 @@ const EmployeeSchedule = {
      * Delete a schedule row and its breaks (FK CASCADE handles breaks).
      */
     delete: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         const [result] = await pool.query(
             'DELETE FROM employee_schedules WHERE id = ? AND business_id = ?',
             [id, businessId]
@@ -194,6 +199,7 @@ const EmployeeSchedule = {
      * Returns array of conflicting appointment rows.
      */
     detectConflicts: async (businessId, userId, dayOfWeek, newStartTime, newEndTime, newIsDayOff) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
         // Only future + scheduled appointments matter
         const sql = `
             SELECT a.id, a.appointment_datetime, s.duration_minutes,

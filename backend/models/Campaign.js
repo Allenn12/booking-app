@@ -1,7 +1,9 @@
 import pool from '../config/database.js';
+import { ERRORS } from '../utils/errors.js';
 
 class Campaign {
   static async getAllForBusiness(businessId, limit = 50, offset = 0) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       SELECT 
         c.*, 
@@ -24,6 +26,7 @@ class Campaign {
   }
 
   static async getById(businessId, campaignId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `
       SELECT c.*, s.name as segment_name, t.type as template_type
       FROM campaigns c
@@ -36,6 +39,7 @@ class Campaign {
   }
 
   static async updateDraft(businessId, campaignId, data) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const { name, segment_id, template_id, inline_message } = data;
     const sql = `
       UPDATE campaigns 
@@ -47,12 +51,14 @@ class Campaign {
   }
 
   static async deleteDraft(businessId, campaignId) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const sql = `DELETE FROM campaigns WHERE id = ? AND business_id = ? AND status = 'draft'`;
     const [result] = await pool.query(sql, [campaignId, businessId]);
     return result.affectedRows > 0;
   }
 
   static async getRecipients(businessId, campaignId, limit = 50, offset = 0) {
+    if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory');
     const campSql = `SELECT id FROM campaigns WHERE id = ? AND business_id = ?`;
     const [campRows] = await pool.query(campSql, [campaignId, businessId]);
     if (campRows.length === 0) return { recipients: [], total: 0 };

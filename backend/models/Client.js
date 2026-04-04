@@ -6,6 +6,7 @@ const Client = {
      * Find a client by exact phone match within a specific business.
      */
     findByPhone: async (businessId, phone) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for phone lookup');
         const sql = 'SELECT * FROM clients WHERE business_id = ? AND phone = ?';
         const [rows] = await pool.query(sql, [businessId, phone]);
         return rows.length > 0 ? rows[0] : null;
@@ -14,9 +15,10 @@ const Client = {
     /**
      * Get a single client by ID.
      */
-    getById: async (id) => {
-        const sql = 'SELECT * FROM clients WHERE id = ?';
-        const [rows] = await pool.query(sql, [id]);
+    getById: async (id, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for scoped lookup');
+        const sql = 'SELECT * FROM clients WHERE id = ? AND business_id = ?';
+        const [rows] = await pool.query(sql, [id, businessId]);
         return rows.length > 0 ? rows[0] : null;
     },
 
@@ -24,6 +26,7 @@ const Client = {
      * Get a single client by ID, scoped to a business (multi-tenant safe).
      */
     getByBusinessAndId: async (businessId, clientId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for scoped lookup');
         const sql = 'SELECT * FROM clients WHERE id = ? AND business_id = ?';
         const [rows] = await pool.query(sql, [clientId, businessId]);
         return rows.length > 0 ? rows[0] : null;
@@ -257,16 +260,17 @@ const Client = {
      * Update editable client fields (name, phone, email, notes).
      * Whitelist-only — no arbitrary field injection possible.
      */
-    update: async (clientId, data) => {
+    update: async (clientId, data, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for scoped update');
         const ALLOWED = ['name', 'phone', 'email', 'notes'];
         const fields  = Object.keys(data).filter(k => ALLOWED.includes(k) && data[k] !== undefined);
         if (fields.length === 0) return false;
 
         const setClause = fields.map(f => `${f} = ?`).join(', ');
         const values    = fields.map(f => data[f] === '' ? null : data[f]);
-        values.push(clientId);
+        values.push(clientId, businessId);
 
-        const sql = `UPDATE clients SET ${setClause} WHERE id = ?`;
+        const sql = `UPDATE clients SET ${setClause} WHERE id = ? AND business_id = ?`;
         const [result] = await pool.query(sql, values);
         return result.affectedRows > 0;
     },
@@ -274,9 +278,10 @@ const Client = {
     /**
      * Update internal notes for a client.
      */
-    updateNotes: async (clientId, notes) => {
-        const sql = 'UPDATE clients SET notes = ? WHERE id = ?';
-        const [result] = await pool.query(sql, [notes, clientId]);
+    updateNotes: async (clientId, notes, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for scoped update');
+        const sql = 'UPDATE clients SET notes = ? WHERE id = ? AND business_id = ?';
+        const [result] = await pool.query(sql, [notes, clientId, businessId]);
         return result.affectedRows > 0;
     },
 
@@ -305,14 +310,15 @@ const Client = {
      * Increment appointment stats on the client record.
      * Called after a successful appointment creation.
      */
-    incrementStats: async (clientId) => {
+    incrementStats: async (clientId, businessId) => {
+        if (!businessId) throw ERRORS.VALIDATION('Business ID is mandatory for scoped update');
         const sql = `
             UPDATE clients 
             SET total_appointments = total_appointments + 1,
                 last_appointment_at = NOW()
-            WHERE id = ?
+            WHERE id = ? AND business_id = ?
         `;
-        await pool.query(sql, [clientId]);
+        await pool.query(sql, [clientId, businessId]);
     }
 };
 
