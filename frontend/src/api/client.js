@@ -352,6 +352,25 @@ export const api = {
 
   getPublicAvailabilityRange: (slug, start, end, serviceId) => 
     apiRequest(`/public/book/${slug}/availability-range?start=${start}&end=${end}&service_id=${serviceId}`),
+
+  // ==========================================
+  // CUSTOMER PORTAL (magic link, public)
+  // ==========================================
+
+  /** Fetch portal data by token. Returns { customer, business, appointments: { upcoming, past } } */
+  getPortal: (token) =>
+    apiRequest(`/portal/${token}`),
+
+  /** Cancel a specific appointment via the portal token */
+  cancelPortalAppointment: (token, appointmentId) =>
+    apiRequest(`/portal/${token}/cancel/${appointmentId}`, { method: 'POST' }),
+
+  /** "Resend my link" — sends email to phone owner. Always 200. */
+  lookupPortalLink: (phone) =>
+    apiRequest('/portal/lookup', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
 };
 
 export default api;

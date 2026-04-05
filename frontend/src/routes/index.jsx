@@ -15,6 +15,8 @@ import RegisterPage from '../pages/public/RegisterPage';
 import VerifyEmailPage from '../pages/public/VerifyEmailPage';
 import EmailVerifiedPage from '../pages/public/EmailVerifiedPage';
 import PublicBookingPage from '../pages/public/PublicBookingPage';
+import CustomerPortalPage from '../pages/public/CustomerPortalPage';
+import PortalLookupPage from '../pages/public/PortalLookupPage';
 
 // Authenticated pages
 import Dashboard from '../pages/app/Dashboard';
@@ -188,8 +190,10 @@ export function AppRoutes() {
     
     <Routes>
       <Route path="/book/:slug" element={<PublicBookingPage />} />
-      {/* ================== PUBLIC BOOKING (standalone, no guards) ================== */}
-      {/* <Route path="/book/:slug" element={<PublicBookingPage />} /> */}
+      {/* ================== CUSTOMER PORTAL (standalone, no guards) ================== */}
+      {/* IMPORTANT: /portal/lookup must be BEFORE /portal/:token to avoid route shadowing */}
+      <Route path="/portal/lookup" element={<PortalLookupPage />} />
+      <Route path="/portal/:token"  element={<CustomerPortalPage />} />
 
       {/* ================== PUBLIC ROUTES ================== */}
       {routeConfig.public.map(({ path, component: Component }) => (

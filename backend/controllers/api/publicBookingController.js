@@ -7,6 +7,7 @@ import BusinessHour from '../../models/BusinessHour.js';
 import { normalizePhone } from '../../utils/phoneFormatter.js';
 import NotificationService from '../../services/NotificationService.js';
 import AvailabilityService from '../../services/AvailabilityService.js';
+import EmailTemplateService from '../../services/EmailTemplateService.js';
 
 /**
  * Public Booking Controller — NO auth required.
@@ -302,6 +303,16 @@ export const PublicBookingController = {
                 }
             }
 
+            // Email-only-if-null strategy (Correction Q2):
+            // If client already exists but has no email, set it from the booking form.
+            // If client already has an email, preserve it (first email wins — Lime parity).
+            if (existingClient && !existingClient.email && client_email) {
+                await pool.query(
+                    'UPDATE clients SET email = ? WHERE id = ? AND business_id = ?',
+                    [client_email, finalClientId, business.id]
+                );
+            }
+
             // Create appointment
             const newAptId = await Appointment.create({
                 business_id: business.id,
@@ -339,6 +350,39 @@ export const PublicBookingController = {
                 );
             } catch (err) {
                 console.error('Notification Service Error on Public Booking:', err);
+            }
+
+            // Send confirmation email with portal link (non-blocking)
+            try {
+                // Re-fetch the client to get the latest portal_token (newly created or existing)
+                const [clientRows] = await pool.query(
+                    'SELECT email, portal_token FROM clients WHERE id = ? AND business_id = ?',
+                    [finalClientId, business.id]
+                );
+                const clientEmail  = clientRows[0]?.email;
+                const portalToken  = clientRows[0]?.portal_token;
+
+                if (clientEmail && portalToken) {
+                    const portalUrl    = `${process.env.FRONTEND_URL}/portal/${portalToken}`;
+                    const [serviceRow] = await pool.query('SELECT name, duration_minutes, price FROM services WHERE id=?', [service_id]);
+                    const [workerRow]  = await pool.query(`SELECT CONCAT(first_name, ' ', COALESCE(last_name,'')) AS name FROM user WHERE id=?`, [worker_id]);
+
+                    await EmailTemplateService.sendBookingConfirmation({
+                        to:          clientEmail,
+                        business,
+                        appointment: {
+                            datetime:         appointment_datetime,
+                            service_name:     serviceRow[0]?.name,
+                            duration_minutes: serviceRow[0]?.duration_minutes,
+                            service_price:    serviceRow[0]?.price,
+                            worker_name:      workerRow[0]?.name,
+                        },
+                        portalUrl,
+                    });
+                }
+            } catch (emailErr) {
+                console.error('[Email] Booking confirmation failed (non-blocking):', emailErr.message);
+                // Non-blocking — booking success is not affected by email failure
             }
 
             res.status(201).json({

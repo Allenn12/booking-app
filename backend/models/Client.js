@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import { ERRORS } from '../utils/errors.js';
+import { randomBytes } from 'crypto';
 
 const Client = {
     /**
@@ -43,12 +44,25 @@ const Client = {
             throw ERRORS.VALIDATION('Business ID, Name, and Phone are required for Client creation');
         }
 
+        // Generate portal token for real clients — NEVER for walk-in sentinel.
+        // Walk-in: phone === 'WALKIN' gets null token (no portal access).
+        const isWalkIn = (phone === 'WALKIN' || !phone);
+        const portal_token = isWalkIn ? null : Client.generatePortalToken();
+
         const sql = `
-            INSERT INTO clients (business_id, name, phone, email, notes) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO clients (business_id, name, phone, email, notes, portal_token, portal_token_active) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
-        const params = [businessId, name, phone, email || null, notes || null];
+        const params = [
+            businessId,
+            name,
+            phone,
+            email || null,
+            notes || null,
+            portal_token,
+            portal_token ? 1 : 0  // Walk-in gets 0 (inactive), real clients get 1 (active)
+        ];
 
         // Allow opting into an existing transaction
         const db = transactionConnection || pool;
@@ -319,6 +333,36 @@ const Client = {
             WHERE id = ? AND business_id = ?
         `;
         await pool.query(sql, [clientId, businessId]);
+    },
+
+    /**
+     * Generate a cryptographically secure portal token.
+     * 18 random bytes → 24-char base64url string (144 bits entropy).
+     * URL-safe: A-Z a-z 0-9 - _  (no encoding needed in URLs).
+     */
+    generatePortalToken: () => {
+        return randomBytes(18).toString('base64url');
+    },
+
+    /**
+     * Find a client by their portal token.
+     * GLOBAL lookup — tokens are globally unique, no business_id needed.
+     * Returns null if token not found OR if token is revoked (portal_token_active = 0).
+     *
+     * ⚠️  This is the AUTH method for the customer portal.
+     *    Revoked tokens (active = 0) return null → caller gets 404, not 403.
+     *    This prevents leaking info about whether a token exists but is banned.
+     */
+    findByPortalToken: async (token) => {
+        if (!token) return null;
+        const sql = `
+            SELECT c.*
+            FROM clients c
+            WHERE c.portal_token = ?
+              AND c.portal_token_active = 1
+        `;
+        const [rows] = await pool.query(sql, [token]);
+        return rows.length > 0 ? rows[0] : null;
     }
 };
 

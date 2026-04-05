@@ -47,3 +47,30 @@ export const publicBookingGetLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// ── Portal rate limiters ───────────────────────────────────────────────────
+// These protect the customer portal (magic link) endpoints.
+
+export const portalGetLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,   // 1 minute
+  max: 30,                    // 30 requests per minute per IP (generous for shared IPs)
+  message: { success: false, error: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const portalCancelLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 5,                     // 5 cancel attempts per 15 minutes per IP
+  message: { success: false, error: 'Too many cancellation attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const portalLookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 3,                     // 3 lookup requests per 15 minutes per IP
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
